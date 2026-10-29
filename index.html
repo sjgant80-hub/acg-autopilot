@@ -23,6 +23,7 @@
   <h2><small>What it is</small>A process review that runs itself, and hands people the hard calls</h2>
   <p>When an agent works for hours, the danger is rarely the code. It is the process: a goal that drifted, a tool nobody approved, an assumption made quietly on step 40, a confident report that the work “passes” when nothing checked it. A person reviewing that afterwards has to reconstruct it from memory and chat logs, and the agent’s own summary of what it did is the least reliable source of all.</p>
   <p>The Autopilot works from a <b>process record</b>: the goal and limits written down and hashed before the first model call, then every call, tool use, assumption, question, answer, artifact and final claim, in order. A judge, separate code that never asks the agent anything, runs ten checks over that record. Each check says pass, flag or fail, why, and points at the exact entries it rests on. Checks that are a matter of judgement (hidden assumptions, overclaiming, plain language, how well the person directed the agent) can only flag: a human reviewer decides them in acg-assess.</p>
+  <p><b>How it is built.</b> In parts we call organs. For each, the claims it must meet are written down and committed before its code exists; the code is then tested, and its tests are themselves tested by a mutation gate (every small deliberate fault in the code must be caught, or the build fails); a seeded suite of jobs measures the claims; the result is kept, failures included, and re-run by CI on every change. Organ 1 is the record and the judge; organ 1b added the well-formedness check.</p>
   <p>The reviewed records add up, with the member’s consent, to a <b>portfolio</b> that shows how someone works, which an employer can check instead of trusting a CV.</p>
 </section>
 
@@ -104,6 +105,7 @@
   <h2><small>Measured</small>Claims written down first, then tested</h2>
   <p>Before the judge existed, its claims were committed: how many planted failures it must catch, how few false flags it may raise on clean jobs, and that it never fails a judgement item by itself. Then a seeded suite of jobs was built and judged. A claim that failed is kept.</p>
   <div id="receipts">loading the receipts…</div>
+  <div class="callout"><b>Three different claims, not one.</b> “Total and deterministic” held every time: over every record judged, the judge never crashed and gave the same answer twice. “People own the judgement calls” held every time: no judgement item was ever failed by the machine, and every flag went to the review queue. What failed is narrower: some broken records were judged as clean, because the check that a record is well-formed was missing (organ 1) and then too shallow (organ 1b).</div>
   <div class="callout"><b>Said straight.</b> The same author wrote the planted-failure suite and the judge, so a perfect catch rate on it is a floor, not proof: a judge can be tuned to its author’s plants. The independent tests are a red team trying to game the record, and the pilot on real guild jobs. Neither has happened yet. Organ 1 judges records; capturing them from a live agent is organ 2.</div>
 </section>
 
@@ -135,14 +137,15 @@
   <div class="grid three">
     <div class="panel"><h3>The guild</h3><p>Reviewers spend their time on judgement calls, not on reconstructing what happened. Every review starts from the same record and the same checks, versioned, so two reviewers see the same evidence. The guild can certify people who run agentic work with discipline, which is the scarce skill.</p></div>
     <div class="panel"><h3>A member</h3><p>Your process becomes evidence: intent written first, tools you sanctioned, assumptions you surfaced, results you had checked. Records are yours, pseudonymous by default, shared only when you opt in, and can be re-run by anyone you show them to.</p></div>
-    <div class="panel"><h3>An employer</h3><p>Instead of trusting a CV or a recruiter, sample a candidate’s reviewed records and re-run them. You see how they direct an agent: whether they seal intent, catch overreach, and verify before accepting.</p></div>
+    <div class="panel"><h3>An employer</h3><p>Instead of trusting a CV or a recruiter, sample a candidate’s reviewed records and re-run them. You see how they direct an agent: whether they seal intent, catch overreach, and verify before accepting. To see what one looks like, load a sample in <a href="#try">Try it</a> and judge it: the table is what a reviewer sees, the queue is what they decide.</p></div>
   </div>
   <h3>Roll-out</h3>
   <ol class="steps">
     <li><b>Align the rubric with acg-assess.</b> Map P0 to P10 onto Alex’s rubric; his governs. The rubric id travels with every judgement.</li>
     <li><b>Capture</b> (organ 2): a recorder around Claude Code and one other harness writes the record as the job runs, intent first.</li>
     <li><b>Bridge</b> (organ 3): records and flags go into acg-assess for review; decisions come back and are signed.</li>
-    <li><b>Red team, then pilot</b>: try to game the record; then real guild jobs, measuring how many flags reach a person and what capture costs.</li>
+    <li><b>Red team</b> (not yet run): people who did not write the judge, the guild’s red-teamer first, try to make a badly run job pass: hide an assumption, slip in a tool, polish a summary. Every attempt that gets through becomes a planted case in the suite, so the judge has to catch it from then on. This is what answers the shared-author weakness.</li>
+    <li><b>Pilot</b> (not yet run): real guild jobs, with members’ consent, measuring how many flags reach a person, how many a reviewer overturns, and what capture costs in time.</li>
     <li><b>Portfolio</b>: opt-in, redacted samples an employer can re-run.</li>
   </ol>
   <h3>Cost, data and ownership</h3>
