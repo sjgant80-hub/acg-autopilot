@@ -1,0 +1,80 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": 3,
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-3.json",
+  "commit": "2cf6ad09287da6403e502d0524356ab09a43c519",
+  "claimsSha256": "1b874bc2b4f87f71d7f852210e944d53ca3917583140af19f73915b3e40f2144"
+ },
+ "demoSeeds": "public demonstration keys, never real ones",
+ "facts": {
+  "bundles": 1000,
+  "untouched": 1000,
+  "F1": {
+   "tried": 71205,
+   "caught": 71205
+  },
+  "F2": {
+   "each": 1000,
+   "attackerKey": 1000,
+   "movedRecorder": 1000,
+   "judgementLie": 450,
+   "movedReview": 1000
+  },
+  "F3": {
+   "rerun": 1000
+  },
+  "F4": {
+   "forms": 16,
+   "hits": 0
+  },
+  "F5": {
+   "logs": 31,
+   "verified": 31,
+   "tried": 5807,
+   "caught": 5807,
+   "lastLineCut": 31,
+   "lastLineCutCaught": 31
+  }
+ },
+ "verdicts": [
+  {
+   "id": "F1",
+   "kind": "property",
+   "claim": "The end of a log is anchored: across the 1,000 bundles, every one-line edit (a changed field, a removed line, two adjacent lines swapped), every cut of the last 1 to 5 lines, and every whole log rewritten with fresh hashes by someone without the recorder's key fails verification; every untouched bundle verifies.",
+   "held": true,
+   "measured": "1000 of 1000 untouched bundles verified; 71205 of 71205 attacks on their logs refused (one-line edits, tail cuts of 1 to 5 lines, whole logs rewritten with fresh hashes)"
+  },
+  {
+   "id": "F2",
+   "kind": "property",
+   "claim": "Forgery is refused: for each of the 1,000, a bundle re-signed with the attacker's key, a recorder signature moved onto another job's record, a judge's signature over a judgement a re-run does not give, and a reviewer's decisions moved onto another record are each refused.",
+   "held": false,
+   "measured": "refused, of 1000 each: the attacker’s key 1000, signatures moved onto another job 1000, a judgement a re-run does not give 450, a reviewer’s decisions moved 1000"
+  },
+  {
+   "id": "F3",
+   "kind": "property",
+   "claim": "The judgement re-runs: for every one of the 1,000, judging the record again gives byte for byte the judgement whose hash the judge signed.",
+   "held": true,
+   "measured": "1000 of 1000 judgements re-ran byte for byte to the hash the judge signed"
+  },
+  {
+   "id": "F4",
+   "kind": "property",
+   "claim": "Keys stay private: no private key, in any form it is held (raw, PKCS#8, hex or base64), appears in any record, log, bundle or receipt the measurement writes.",
+   "held": true,
+   "measured": "private-key forms found in 1000 bundles and the receipt: 0"
+  },
+  {
+   "id": "F5",
+   "kind": "property",
+   "claim": "Organ 2's gap is closed on real jobs: on the 31 real logs (on this machine), once signed, every one-line edit and every cut of the last line fails verification, including the kind organ 2's chain alone missed.",
+   "held": true,
+   "measured": "31 real logs signed (31 verified untouched): 5807 of 5807 attacks refused; the cut of the last line, which organ 2’s chain alone missed, refused 31 of 31"
+  }
+ ],
+ "held": 4,
+ "failed": 1
+}
