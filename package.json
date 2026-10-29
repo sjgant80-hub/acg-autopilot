@@ -1,0 +1,9 @@
+{
+ "name": "acg-autopilot",
+ "version": "0.1.0",
+ "type": "module",
+ "license": "MIT",
+ "description": "ACG-Assess Autopilot: capture how agentic work was done, check the process automatically, feed human review",
+ "scripts": { "test": "node --test test/*.test.mjs" },
+ "engines": { "node": ">=20" }
+}
