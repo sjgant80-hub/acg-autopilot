@@ -41,7 +41,7 @@ export async function verifyBundle(b, trust) {
     if (p.job_id !== b.record.job_id) problems.push('recorder: signed for a different job');
     const v = await verifyLog(b.log);
     if (!v.ok) problems.push('log: ' + v.why);
-    else if (!isObj(p.log) || p.log.head !== v.head || p.log.length !== v.length) problems.push('log: it does not end where the recorder signed (' + v.length + ' lines, not ' + (isObj(p.log) ? p.log.length : '?') + ')');
+    else if (!isObj(p.log) || p.log.head !== v.head || p.log.length !== v.length) problems.push('log: it does not end where the recorder signed (' + (isObj(p.log) && p.log.length === v.length ? 'the same ' + v.length + ' lines, but its last line is not the one signed' : v.length + ' lines, not ' + (isObj(p.log) ? p.log.length : '?')) + ')');
     const fromLog = toRecord({ events: eventsOf(b.log) }).timeline;
     if (JSON.stringify(fromLog) !== JSON.stringify(timelineOf(b.record))) problems.push('record: its timeline is not the log’s');
   }

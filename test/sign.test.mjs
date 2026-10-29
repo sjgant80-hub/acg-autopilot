@@ -71,7 +71,7 @@ test('the log: changed, cut short, rewritten whole, or not the record’s timeli
   const cut = copy(); cut.log.pop();
   assert.deepEqual(await why(cut), ['log: it does not end where the recorder signed (4 lines, not 5)']);
   const re = copy(); re.log = await chain([...EVENTS.slice(0, 2), { kind: 'question', at: '2026-10-29T10:00:02.000Z', text: 'what' }, ...EVENTS.slice(3)]);
-  assert.deepEqual(await why(re), ['log: it does not end where the recorder signed (5 lines, not 5)', 'record: its timeline is not the log’s']);
+  assert.deepEqual(await why(re), ['log: it does not end where the recorder signed (the same 5 lines, but its last line is not the one signed)', 'record: its timeline is not the log’s']);
   const swapped = copy(); [swapped.log[1], swapped.log[2]] = [swapped.log[2], swapped.log[1]];
   assert.deepEqual(await why(swapped), ['log: line 1 does not follow the line before it', 'record: its timeline is not the log’s']);
   const noP = copy(); noP.recorded.payload.log = 'x'; noP.recorded = await signAs(R, 'recorded', noP.recorded.payload);

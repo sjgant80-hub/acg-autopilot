@@ -47,6 +47,20 @@ first prompt. Every log line carries the hash of the line before it. The hook ne
 an error goes to `.acg/errors.log`. An imported past job sealed no intent, and its record says so ("none sealed"), so it
 fails P1.
 
+## Sign a record (organ 3)
+
+```
+node /path/to/acg-autopilot/bin/acg.mjs keys                 # this machine's recorder, judge and reviewer keys; private seeds stay in .acg/keys
+node /path/to/acg-autopilot/bin/acg.mjs bundle               # the record and its log, signed by the recorder and the judge
+node /path/to/acg-autopilot/bin/acg.mjs review --check P2 --decision upheld --note "the assumption was real"
+node /path/to/acg-autopilot/bin/acg.mjs verify-bundle .acg/jobs/<job>/bundle.json --trust trust.json
+```
+
+The recorder signs the record's hash and where its log ends; the judge signs the judgement's hash; a reviewer signs a
+decision on each flagged check. Checking a bundle refuses a log cut short or rewritten with fresh hashes, a judgement
+that judging the record again does not give, a signature moved onto another record, and any key not on the trust list.
+Ed25519 through WebCrypto, so the browser checks a bundle exactly as Node does.
+
 ## How it is built
 
 Each organ's claims are committed before its code (`claims/`), measured by a seeded suite (`tools/`), and the result
@@ -59,8 +73,8 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 - `src/schema.mjs`: schema v1 field by field, each timeline entry's fields typed by its kind.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
 
-Organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the strict schema) are built and measured; 1c held 4 of 4. Capture from a live harness, the bridge to acg-assess and
-the member portfolio are the next organs. Honest scope: it measures process discipline and evidence, not whether the
+Organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the strict schema) are built and measured; 1c held 4 of 4; capture from Claude Code (organ 2, 6 of 7) and signed records (organ 3, 4 of 5, then 3b 1 of 1) too. The bridge to acg-assess and
+the member portfolio are next. Honest scope: it measures process discipline and evidence, not whether the
 work is correct; the planted-failure suite and the judge share an author, so the independent tests are a red team and
 a pilot on real guild jobs, neither yet run.
 

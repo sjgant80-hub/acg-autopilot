@@ -37,3 +37,5 @@ jobs:
         run: node tools/measure-1c.mjs --check
       - name: organ 3 - 1,000 signed bundles attacked again; F1-F4 must come out as the receipt says (F5 needs the private transcripts and is local)
         run: node tools/measure-3.mjs --check
+      - name: organ 3b - a false judgement refused, the true one verified, on all 1,000; byte for byte
+        run: node tools/measure-3b.mjs --check

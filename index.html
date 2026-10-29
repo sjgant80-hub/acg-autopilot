@@ -16,7 +16,7 @@
   <p class="dim">Built to feed the AI Craftspeople Guild’s process-review tool, acg-assess (Alex’s design). Its rubric governs; the checks here are a proposal to align with it. <span id="hdr-sum"></span></p>
 </header>
 <nav>
-  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#record">Record a job</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
+  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#record">Record a job</a><a href="#signed">Signed records</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
 </nav>
 
 <section id="what">
@@ -69,8 +69,31 @@
     <li><b>Many tools at once:</b> Claude Code can run several tools in parallel. Each call to the recorder takes a lock on the log, so lines are written one at a time, each with its own time, and the chain never forks.</li>
   </ul>
   <h3>What the chain proves, and what it does not yet</h3>
-  <p>Each line carries the hash of the line before it. So any change, insertion, removal or reordering inside the log is caught: in the measurement, every such edit was. Two things are not caught yet, and the measurement found the first. Cutting off the end of a log leaves a shorter log that is still a valid chain. And someone who rewrites a whole log, recomputing every hash, makes a new chain that checks out. A chain proves a log is consistent; it does not prove who wrote it or where it ended. The fix for both is the next organ: the record carries where its log ends, signed by the recorder’s own key, so a shortened or rewritten log no longer matches the signature.</p>
+  <p>Each line carries the hash of the line before it. So any change, insertion, removal or reordering inside the log is caught: in the measurement, every such edit was. Two things are not caught yet, and the measurement found the first. Cutting off the end of a log leaves a shorter log that is still a valid chain. And someone who rewrites a whole log, recomputing every hash, makes a new chain that checks out. A chain proves a log is consistent; it does not prove who wrote it or where it ended. Organ 3 fixed both: the record now carries where its log ends, signed by the recorder’s own key, so a shortened or rewritten log no longer matches the signature (see <a href="#signed">Signed records</a>).</p>
   <p class="dim">Claude Code’s hooks fire on prompts and tool uses, not on each model request, so a live record marks each prompt as the start of model work; the importer, reading the transcript, records each request.</p>
+</section>
+
+<section id="signed">
+  <h2><small>Signed records</small>A record that says who wrote it, who judged it, and where it ends</h2>
+  <p>A chain proves a log is consistent, not who wrote it or where it ended. So a record travels as a <b>bundle</b>: the record, its log, and up to three signatures. The <b>recorder</b> signs the record’s hash, its job, and where its log ends (the last line’s hash and the number of lines). The <b>judge</b> signs the record’s hash, the rubric and the hash of its judgement. A <b>reviewer</b> signs their decision on each flagged check: upheld or overturned, with a note. The keys are Ed25519; each private key stays on its own machine, and anyone with the public keys can check a bundle.</p>
+  <ol class="steps">
+    <li><b>Checking a bundle</b> checks each signature against a trust list of public keys, that the log is whole and ends exactly where the recorder signed, that the record’s timeline is the log’s, that judging the record again gives the judgement the judge signed, and that the reviewer decided only flagged checks.</li>
+    <li><b>So a log cut short is refused</b>, and so is one rewritten from scratch with fresh hashes: neither ends where the recorder signed, and a forger cannot re-sign without the recorder’s key.</li>
+    <li><b>And a judgement cannot be dressed up:</b> it must be what the judge gives when it is run again, byte for byte.</li>
+  </ol>
+  <div class="panel">
+    <h3>Try it: sign a sample, then tamper with it</h3>
+    <p class="dim">Your browser builds a bundle from a sample job and signs it with three public demonstration keys (never real ones), then checks it. Each button tampers with a copy and checks again.</p>
+    <div class="row">
+      <button id="sg-make" type="button" class="primary">Sign a sample job</button>
+      <button id="sg-cut" type="button">Cut the last line</button>
+      <button id="sg-rewrite" type="button">Rewrite the log</button>
+      <button id="sg-lie" type="button">Forge the judgement</button>
+      <button id="sg-forger" type="button">Sign with another key</button>
+    </div>
+    <div id="sg-out" role="status" aria-live="polite"></div>
+  </div>
+  <p class="dim">From the command line: <span class="mono">acg keys</span> makes this machine’s three keys (the private seeds stay in <span class="mono">.acg/keys</span>), <span class="mono">acg bundle</span> signs a job, <span class="mono">acg review --check P2 --decision upheld --note "…"</span> adds a reviewer’s decision, <span class="mono">acg verify-bundle</span> checks one.</p>
 </section>
 
 <section id="how">
@@ -87,10 +110,10 @@
       <path d="M495 100 H520" marker-end="url(#ar)"/>
       <rect x="520" y="60" width="140" height="80" rx="8"/><text x="590" y="92" text-anchor="middle">4 · flag</text><text x="590" y="114" text-anchor="middle" class="d">a person decides</text>
       <path d="M660 100 H685" marker-end="url(#ar)"/>
-      <rect x="685" y="60" width="140" height="80" rx="8"/><text x="755" y="92" text-anchor="middle">5 · record</text><text x="755" y="114" text-anchor="middle" class="d">signed, re-runnable</text>
+      <rect x="685" y="60" width="140" height="80" rx="8" class="on"/><text x="755" y="92" text-anchor="middle">5 · record</text><text x="755" y="114" text-anchor="middle" class="d">signed, re-runnable</text>
       <path d="M825 100 H850" marker-end="url(#ar)"/>
       <rect x="850" y="60" width="145" height="80" rx="8"/><text x="922" y="92" text-anchor="middle">6 · portfolio</text><text x="922" y="114" text-anchor="middle" class="d">with consent</text>
-      <text x="5" y="30" class="d">Built and measured: capture and normalise (organ 2) and check (organ 1). The bridge to acg-assess and the portfolio are next, each sealed before it is built.</text>
+      <text x="5" y="30" class="d">Built and measured: capture (organ 2), check (organ 1), the signed record (organ 3). The bridge to acg-assess and the portfolio are next.</text>
     </svg>
   </div>
   <ol class="steps">
@@ -141,6 +164,7 @@
       <tr><td class="mono">src/log.mjs</td><td>The job’s log: one entry a line, each carrying the hash of the line before; the check that names the first line changed, removed or out of order.</td></tr>
       <tr><td class="mono">src/normalise.mjs</td><td>A log and its sealed intent turned into a record; the summary written from the log, in plain words.</td></tr>
       <tr><td class="mono">src/transcript.mjs</td><td>A finished Claude Code transcript turned into a record, honest that no intent was sealed.</td></tr>
+      <tr><td class="mono">src/sign.mjs · src/bundle.mjs</td><td>Ed25519 through the platform’s WebCrypto (Node and the browser alike); the bundle, its signatures, and everything checking one checks.</td></tr>
       <tr><td class="mono">bin/acg.mjs · examples/</td><td>The command line and the hook Claude Code calls; the per-project hook settings to copy.</td></tr>
       <tr><td class="mono">tools/suite.mjs</td><td>The seeded planted-failure suite: clean jobs, one failure of each kind, late intents, malformed records.</td></tr>
       <tr><td class="mono">tools/measure-1.mjs · 1b · 1c</td><td>Each organ measured against its sealed claims; CI re-runs both and the receipts must come out byte for byte the same.</td></tr>
@@ -199,7 +223,7 @@
   <h3>Is this acg-assess?</h3><p>No. acg-assess is the guild’s review tool, and its rubric governs. This automates the capture and the checks around it and feeds it records and flags.</p>
   <h3>Can it record a live Claude Code job?</h3><p>Yes, through Claude Code’s own hooks, per project: see <a href="#record">Record a job</a>. It was measured by replaying real past jobs into the hook, a process per event, rather than inside a live session; the receipt says so.</p>
   <h3>Does my data leave my machine?</h3><p>Not to be judged: the judge runs in your browser or on your machine. Sharing a record for review or a portfolio is your choice.</p>
-  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on 2,000 fresh broken records, none passed cleanly. And the recorder (organ 2) missed one kind of tampering: cutting off the last lines of a job’s log leaves a shorter log whose lines still each follow the one before. Every other edit was caught. The fix is to anchor where the log ends outside the log, signed, which is the next organ. See <a href="#measured">Measured</a>.</p>
+  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on 2,000 fresh broken records, none passed cleanly. And the recorder (organ 2) missed one kind of tampering: cutting off the last lines of a job’s log leaves a shorter log whose lines still each follow the one before. Every other edit was caught. Organ 3 anchored where the log ends, signed: on the same 31 real logs every attack was then refused, the cut end included. Its own measurement had a flaw too: its forged judgement (“every check passes”) was simply true for 550 of the 1,000 jobs, so it was rightly accepted; 3b forged one that really differed, and all 1,000 were refused. See <a href="#measured">Measured</a>.</p>
 </section>
 
 <footer>
