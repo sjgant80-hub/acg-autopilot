@@ -1,0 +1,65 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": "1c",
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-1c.json",
+  "commit": "84bc81d042977b60311264e34f674b11afd7ce19",
+  "claimsSha256": "99c30fd3d6e3a8c0c807a9086dddbe652c9dd48ac33901c655de520900392db6"
+ },
+ "facts": {
+  "rubric": "acg-autopilot.rubric/p0-strict-p10/v3",
+  "fresh": {
+   "damaged": 2000,
+   "unmade": 0,
+   "threw": 0,
+   "cleanPass": 0,
+   "failedP0": 1960,
+   "deterministic": 2000,
+   "nulls": 23,
+   "nullsFailedP0": 23
+  },
+  "earlier": {
+   "cleanPassesUnderV2": 3,
+   "nowFailStrictP0": 3
+  },
+  "good": {
+   "jobs": 1000,
+   "p0Passed": 1000,
+   "otherChecksMoved": 0,
+   "deterministic": 1000
+  }
+ },
+ "verdicts": [
+  {
+   "id": "C1",
+   "kind": "property",
+   "claim": "No damaged record passes cleanly: of 2,000 fresh damaged records, each differing from its clean source, none is judged a pass on all eleven checks under rubric v3, and none throws.",
+   "held": true,
+   "measured": "2000 fresh damaged records (0 could not be made different): clean passes 0, threw 0, the same judgement twice 2000"
+  },
+  {
+   "id": "C2",
+   "kind": "prediction",
+   "claim": "Most damage is caught by the schema itself: at least 95% of the 2,000 fail the strict P0. (Some damage leaves a record valid but incomplete, an empty list of claims for instance; C1 says those still do not pass cleanly.)",
+   "held": true,
+   "measured": "1960 of 2000 failed the strict P0 (98%)"
+  },
+  {
+   "id": "C3",
+   "kind": "property",
+   "claim": "The strict schema costs nothing on good records: it passes all 500 clean and all 500 planted jobs (a badly run job is not a malformed record), the other ten checks give the same outcomes as under rubric v1 on every one of them, and every judgement is the same twice.",
+   "held": true,
+   "measured": "the strict P0 passed 1000 of 1000 clean and planted jobs; the other ten moved on 0; the same twice on 1000"
+  },
+  {
+   "id": "C4",
+   "kind": "property",
+   "claim": "The earlier holes are closed: the 3 damaged records organ 1b judged a clean pass, made again from their seeds, fail the strict P0; and every null record among the fresh damage is judged and fails P0.",
+   "held": true,
+   "measured": "the 3 records organ 1b passed cleanly: 3 now fail the strict P0; null records among the fresh damage: 23, judged and failing P0: 23"
+  }
+ ],
+ "held": 4,
+ "failed": 0
+}
