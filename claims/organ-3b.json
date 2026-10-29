@@ -1,0 +1,10 @@
+{
+ "kind": "acg-autopilot.claims",
+ "organ": "3b",
+ "v": 1,
+ "sealed": "Written and committed after organ 3 was measured (receipts/organ-3.json) and before tools/measure-3b.mjs existed. Disclosed: designed after seeing F2 fail. F2's forged judgement claimed every check passed, which is the true judgement for 550 of the 1,000 jobs (the 500 clean ones, and the 50 whose planted jargon summary the recorder replaces with one written from the log), so for them it was not a forgery at all. F2's failed verdict is kept.",
+ "suite": "The same 1,000 bundles as organ 3, the same demonstration keys.",
+ "claims": [
+  { "id": "F2b", "kind": "property", "claim": "A false judgement is refused: for each of the 1,000, the judge's key signing the true judgement with one check's outcome changed (the first check, passed made failed, anything else made passed) is refused, and the true judgement signed the same way verifies.", "bar": { "rate": 1 } }
+ ]
+}
