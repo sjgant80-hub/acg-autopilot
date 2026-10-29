@@ -7,6 +7,10 @@
 //            [--tool T] [--refers-to N] [--target ID] [--method M] [--result R] [--job ID]
 //   acg claim --id ID --text "…" [--evidence artifacts:ID,timeline:N,intent:goal,summary] [--criterion "…"] [--job ID]
 //   acg log | record | verify | judge [--job ID]      acg judge <record.json>      acg import <transcript.jsonl> [--out F]
+//   acg keys                    make this machine's recorder, judge and reviewer keys (private seeds stay in .acg/keys)
+//   acg bundle [--job ID]       the record and its log, signed by the recorder and the judge → jobs/<job>/bundle.json
+//   acg review --check P2 --decision upheld|overturned --note "…" [--job ID]   a reviewer's signed decision on a flag
+//   acg verify-bundle <bundle.json> [--trust trust.json]
 // State lives in $ACG_HOME, or .acg in the current folder: jobs/<job>/{log.jsonl, head, intent.json, store/, record.json}.
 // The hook never blocks the harness and never prints: on any error it writes a line to errors.log and exits 0.
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, copyFileSync } from 'node:fs';
@@ -17,6 +21,8 @@ import { toRecord } from '../src/normalise.mjs';
 import { importTranscript } from '../src/transcript.mjs';
 import { intentHash, canonical, factsOf, KINDS } from '../src/record.mjs';
 import { assessStrict } from '../src/judge.mjs';
+import { signerFromSeed } from '../src/sign.mjs';
+import { makeBundle, verifyBundle } from '../src/bundle.mjs';
 
 const HOME = resolve(process.env.ACG_HOME || join(process.cwd(), '.acg'));
 const EVENTS = ['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionStart'];
@@ -123,6 +129,34 @@ async function recordOf(job) {
   if (l.error) throw new Error('the log cannot be read: ' + l.error);
   return toRecord({ job_id: job, member_id: process.env.ACG_MEMBER || 'anonymous', harness: { name: 'claude-code' }, intent: existsSync(ip) ? JSON.parse(readFileSync(ip, 'utf8')) : undefined, events: eventsOf(l.lines) });
 }
+const KEYS = join(HOME, 'keys'), ROLES = ['recorder', 'judge', 'reviewer'];
+const hexOf = (u8) => [...u8].map((b) => b.toString(16).padStart(2, '0')).join('');
+async function signer(role) { const p = join(KEYS, role + '.seed'); if (!existsSync(p)) return null; return signerFromSeed(Uint8Array.from(readFileSync(p, 'utf8').trim().match(/../g), (b) => parseInt(b, 16))); }
+async function keys() {
+  mkdirSync(KEYS, { recursive: true });
+  const trust = { recorders: [], judges: [], reviewers: [] };
+  for (const role of ROLES) {
+    const p = join(KEYS, role + '.seed');
+    if (!existsSync(p)) writeFileSync(p, hexOf(globalThis.crypto.getRandomValues(new Uint8Array(32))) + '\n', { mode: 0o600 });
+    trust[role + 's'].push((await signer(role)).publicHex);
+  }
+  writeFileSync(join(KEYS, 'trust.json'), JSON.stringify(trust, null, 1) + '\n');
+  return 'keys in ' + KEYS + ' (the .seed files are private: never share them)\npublic: ' + ROLES.map((r) => r + ' ' + trust[r + 's'][0].slice(0, 16) + '…').join(', ') + '\ntrust list: ' + join(KEYS, 'trust.json');
+}
+async function bundle(o) {
+  const job = currentJob(o), l = linesOf(job), r = await recordOf(job), b = await makeBundle({ record: r, log: l.lines, recorder: await signer('recorder'), judge: await signer('judge') });
+  if (!b.recorded) throw new Error('no recorder key: run acg keys first');
+  const p = join(jobDir(job), 'bundle.json'); writeFileSync(p, JSON.stringify(b, null, 1) + '\n'); return p;
+}
+async function review(o) {
+  const job = currentJob(o), p = join(jobDir(job), 'bundle.json'), rv = await signer('reviewer');
+  if (!existsSync(p) || !rv) throw new Error('acg review needs a bundle (acg bundle) and a reviewer key (acg keys)');
+  if (typeof o.check !== 'string' || !['upheld', 'overturned'].includes(o.decision) || typeof o.note !== 'string') throw new Error('acg review --check P2 --decision upheld|overturned --note "why"');
+  const b = JSON.parse(readFileSync(p, 'utf8')), decisions = [...((b.reviewed && b.reviewed.payload && b.reviewed.payload.decisions) || []).filter((d) => d.check !== o.check), { check: o.check, decision: o.decision, note: o.note }];
+  const next = await makeBundle({ record: b.record, log: b.log, reviewer: rv, decisions });
+  writeFileSync(p, JSON.stringify({ ...b, reviewed: next.reviewed }, null, 1) + '\n');
+  return 'reviewed ' + o.check + ': ' + o.decision;
+}
 const show = (a) => a.results.map((x) => x.id.padEnd(4) + x.outcome.padEnd(5) + x.why).join('\n') + '\nreview queue: ' + (a.review.join(', ') || 'nothing to decide');
 
 async function main() {
@@ -134,9 +168,13 @@ async function main() {
   if (cmd === 'log') { const job = currentJob(o); const r = await recordOf(job); return console.log(r.timeline.map((e) => e.seq + '  ' + e.kind + (e.tool ? ' ' + e.tool : '') + (e.text ? ' · ' + e.text : '')).join('\n') || '(empty)'); }
   if (cmd === 'verify') { const v = await verifyLog(linesOf(currentJob(o)).lines || []); return console.log(v.ok ? 'the log verifies: ' + v.length + ' lines' : 'BROKEN: ' + v.why); }
   if (cmd === 'record') { const job = currentJob(o), r = await recordOf(job), p = join(jobDir(job), 'record.json'); writeFileSync(p, JSON.stringify(r, null, 1) + '\n'); return console.log(p); }
+  if (cmd === 'keys') return console.log(await keys());
+  if (cmd === 'bundle') return console.log(await bundle(o));
+  if (cmd === 'review') return console.log(await review(o));
+  if (cmd === 'verify-bundle') { const b = JSON.parse(readFileSync(o._[1], 'utf8')), tp = typeof o.trust === 'string' ? o.trust : join(KEYS, 'trust.json'); const v = await verifyBundle(b, JSON.parse(readFileSync(tp, 'utf8'))); console.log(v.ok ? 'the bundle verifies' : 'REFUSED:\n  ' + v.problems.join('\n  ')); process.exitCode = v.ok ? 0 : 2; return; }
   if (cmd === 'judge') { const r = o._[1] ? JSON.parse(readFileSync(o._[1], 'utf8')) : await recordOf(currentJob(o)); return console.log(show(assessStrict(r, await factsOf(r)))); }
   if (cmd === 'import') { const { record, counts } = await importTranscript(readFileSync(o._[1], 'utf8')); const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
-  console.log('acg seal | hook | note | claim | log | verify | record | judge | import — see the top of bin/acg.mjs');
+  console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle — see the top of bin/acg.mjs');
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]).replace(/\\/g, '/').endsWith('bin/acg.mjs');

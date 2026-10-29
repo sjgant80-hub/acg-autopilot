@@ -172,3 +172,31 @@ test('a garbage hook input never breaks the harness: exit 0, nothing printed, no
     assert.equal(hookProblem({ session_id: 'a', hook_event_name: 'PostToolUse', tool_name: 'R', tool_input: {} }), null);
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
+
+test('signed records from the command line: keys, a bundle, a review, verified; cut short, refused', () => {
+  const home = mkdtempSync(join(tmpdir(), 'acg-'));
+  try {
+    assert.match(run(home, ['keys']).stdout, /private: never share them/);
+    const seed = readFileSync(join(home, 'keys', 'recorder.seed'), 'utf8').trim();
+    assert.match(seed, /^[0-9a-f]{64}$/);
+    assert.match(run(home, ['keys']).stdout, /public:/, 'keys again keeps the same keys');
+    assert.equal(readFileSync(join(home, 'keys', 'recorder.seed'), 'utf8').trim(), seed);
+    assert.equal(run(home, ['bundle']).status, 1, 'no job yet');
+    run(home, ['seal', '--goal', 'read a note', '--allowed', 'Read']);
+    run(home, ['hook'], JSON.stringify({ session_id: 'j1', hook_event_name: 'UserPromptSubmit' }));
+    run(home, ['hook'], JSON.stringify({ session_id: 'j1', hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: {} }));
+    assert.equal(run(home, ['review', '--check', 'P4', '--decision', 'upheld', '--note', 'x']).status, 1, 'no bundle yet');
+    const p = run(home, ['bundle']).stdout.trim();
+    assert.equal(run(home, ['review', '--check', 'P4', '--decision', 'maybe', '--note', 'x']).status, 1);
+    assert.match(run(home, ['review', '--check', 'P4', '--decision', 'upheld', '--note', 'no claims']).stdout, /reviewed P4: upheld/);
+    assert.match(run(home, ['review', '--check', 'P4', '--decision', 'overturned', '--note', 'fine']).stdout, /overturned/);
+    const b = JSON.parse(readFileSync(p, 'utf8'));
+    assert.deepEqual(b.reviewed.payload.decisions, [{ check: 'P4', decision: 'overturned', note: 'fine' }], 'a second decision on a check replaces the first');
+    const ok = run(home, ['verify-bundle', p]); assert.equal(ok.status, 0); assert.equal(ok.stdout.trim(), 'the bundle verifies');
+    assert.ok(!readFileSync(p, 'utf8').includes(seed), 'the private seed is not in the bundle');
+    b.log.pop(); const cut = join(home, 'cut.json'); writeFileSync(cut, JSON.stringify(b));
+    const bad = run(home, ['verify-bundle', cut]); assert.equal(bad.status, 2); assert.match(bad.stdout, /REFUSED:\n {2}log: it does not end where the recorder signed/);
+    const other = join(home, 'other-trust.json'); writeFileSync(other, JSON.stringify({ recorders: [], judges: [], reviewers: [] }));
+    assert.match(run(home, ['verify-bundle', p, '--trust', other]).stdout, /recorder: signed by a key not on the trust list/);
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
