@@ -1,0 +1,287 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": 2,
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-2.json",
+  "commit": "7fa602801143d62112c8c04b85fb5359657af869",
+  "claimsSha256": "442d26a882ef8ab291b5cd366f198ceb6681aa34b77f0f45adcd6114ec1bb4d0"
+ },
+ "local": "measured on the machine that holds the transcripts; not re-run by CI",
+ "facts": {
+  "when": "2026-10-29",
+  "transcripts": 31,
+  "toolUses": 1470,
+  "hookEvents": 3002,
+  "E1": {
+   "faithful": 31
+  },
+  "E2": {
+   "matched": 31
+  },
+  "E3": {
+   "earlyPassP1": 31,
+   "lateFailP1": 31
+  },
+  "E4": {
+   "events": 3002,
+   "medianMs": 99.1,
+   "p95Ms": 134.5
+  },
+  "E5": {
+   "tried": 2087,
+   "caught": 2062
+  },
+  "E6": {
+   "inputs": 500,
+   "cleanExits": 500,
+   "jobsMade": false,
+   "errorLines": 500,
+   "medianMs": 88
+  },
+  "E7": {
+   "failedP1": 31
+  },
+  "per": [
+   {
+    "sha": "44d762e7bf72b4e7",
+    "toolUses": 13,
+    "requests": 6,
+    "imported": true
+   },
+   {
+    "sha": "32886f4a86d6b1c5",
+    "toolUses": 9,
+    "requests": 7,
+    "imported": true
+   },
+   {
+    "sha": "2f5b9c3435ec9795",
+    "toolUses": 3,
+    "requests": 1,
+    "imported": true
+   },
+   {
+    "sha": "63990425775cd21e",
+    "toolUses": 12,
+    "requests": 9,
+    "imported": true
+   },
+   {
+    "sha": "c3d5ba3eda1cf149",
+    "toolUses": 1,
+    "requests": 1,
+    "imported": true
+   },
+   {
+    "sha": "10af15d7180f0620",
+    "toolUses": 2,
+    "requests": 1,
+    "imported": true
+   },
+   {
+    "sha": "d71ada9ac5e7384c",
+    "toolUses": 33,
+    "requests": 20,
+    "imported": true
+   },
+   {
+    "sha": "6236717549d564b8",
+    "toolUses": 108,
+    "requests": 93,
+    "imported": true
+   },
+   {
+    "sha": "a2133cd27fb0fbfa",
+    "toolUses": 30,
+    "requests": 25,
+    "imported": true
+   },
+   {
+    "sha": "dc6e4cb3f954656d",
+    "toolUses": 3,
+    "requests": 4,
+    "imported": true
+   },
+   {
+    "sha": "4e84207156969d84",
+    "toolUses": 120,
+    "requests": 113,
+    "imported": true
+   },
+   {
+    "sha": "0671fd5cd31480d3",
+    "toolUses": 31,
+    "requests": 28,
+    "imported": true
+   },
+   {
+    "sha": "11b7ce68d7b2f34d",
+    "toolUses": 16,
+    "requests": 12,
+    "imported": true
+   },
+   {
+    "sha": "7284c15ee45f20f8",
+    "toolUses": 5,
+    "requests": 5,
+    "imported": true
+   },
+   {
+    "sha": "a568de23ae716e3c",
+    "toolUses": 167,
+    "requests": 152,
+    "imported": true
+   },
+   {
+    "sha": "5f02aa034e87f7e2",
+    "toolUses": 257,
+    "requests": 205,
+    "imported": true
+   },
+   {
+    "sha": "1b9adf0338b0037d",
+    "toolUses": 2,
+    "requests": 3,
+    "imported": true
+   },
+   {
+    "sha": "860d49c3126b8900",
+    "toolUses": 5,
+    "requests": 5,
+    "imported": true
+   },
+   {
+    "sha": "8b0a2bd58289b2aa",
+    "toolUses": 16,
+    "requests": 8,
+    "imported": true
+   },
+   {
+    "sha": "ccb45453328cb81e",
+    "toolUses": 32,
+    "requests": 25,
+    "imported": true
+   },
+   {
+    "sha": "62e5bc92d5d07b23",
+    "toolUses": 274,
+    "requests": 240,
+    "imported": true
+   },
+   {
+    "sha": "81685f26096a61c2",
+    "toolUses": 24,
+    "requests": 14,
+    "imported": true
+   },
+   {
+    "sha": "73423bddb2ccda0f",
+    "toolUses": 291,
+    "requests": 231,
+    "imported": true
+   },
+   {
+    "sha": "82e1fddc3b8477ec",
+    "toolUses": 2,
+    "requests": 3,
+    "imported": true
+   },
+   {
+    "sha": "ccad04e97468216b",
+    "toolUses": 2,
+    "requests": 3,
+    "imported": true
+   },
+   {
+    "sha": "e2eac4c6f9ca1453",
+    "toolUses": 1,
+    "requests": 2,
+    "imported": true
+   },
+   {
+    "sha": "1717724c1a06b87f",
+    "toolUses": 5,
+    "requests": 7,
+    "imported": true
+   },
+   {
+    "sha": "4ac8500f4213ad9c",
+    "toolUses": 1,
+    "requests": 2,
+    "imported": true
+   },
+   {
+    "sha": "c856404e2699de2c",
+    "toolUses": 1,
+    "requests": 2,
+    "imported": true
+   },
+   {
+    "sha": "5e3defaa01c7ca2a",
+    "toolUses": 2,
+    "requests": 2,
+    "imported": true
+   },
+   {
+    "sha": "e01095bcd8a40936",
+    "toolUses": 2,
+    "requests": 2,
+    "imported": true
+   }
+  ]
+ },
+ "verdicts": [
+  {
+   "id": "E1",
+   "kind": "property",
+   "claim": "Import is faithful: for every transcript, the imported record holds exactly its main-thread tool uses, in order and by name, and one model call per distinct model request; and every imported record fits the strict schema (P0 passes).",
+   "held": true,
+   "measured": "31 of 31 imports hold exactly the transcript’s tool uses in order, a model call per request, and fit the strict schema"
+  },
+  {
+   "id": "E2",
+   "kind": "property",
+   "claim": "The live path matches: replaying every transcript into the hook command gives a record whose tool uses are the import's, same names and same order; its log verifies line by line; and it fits the strict schema.",
+   "held": true,
+   "measured": "31 of 31 replays: tool uses the same as the import, the log verifying, the strict schema met (3002 hook events)"
+  },
+  {
+   "id": "E3",
+   "kind": "property",
+   "claim": "Intent first, by construction: for every transcript replay, sealing the intent before the first prompt makes P1 pass on the hook record, and sealing it after the first prompt makes P1 fail.",
+   "held": true,
+   "measured": "sealed before the first prompt, P1 passed 31 of 31; sealed after it, P1 failed 31 of 31"
+  },
+  {
+   "id": "E4",
+   "kind": "prediction",
+   "claim": "Capture is cheap: across all hook events of all replays, the hook process takes a median of at most 150 ms and a 95th percentile of at most 400 ms of wall time on this machine.",
+   "held": true,
+   "measured": "per hook event (3002 timed): median 99.1 ms, 95th percentile 134.5 ms"
+  },
+  {
+   "id": "E5",
+   "kind": "property",
+   "claim": "The log is tamper-evident: changing one field of a line, removing a line, or swapping two adjacent lines of any replay's log is caught by the log check, for every such edit tried (up to 200 per log).",
+   "held": false,
+   "measured": "2062 of 2087 one-line edits (a changed field, a removed line, a swap) caught"
+  },
+  {
+   "id": "E6",
+   "kind": "property",
+   "claim": "The recorder never breaks the harness: 500 garbage hook inputs (not JSON, the wrong shape, fields missing) each exit cleanly within 2 seconds, add nothing to any job's log, and leave a line in the recorder's error file.",
+   "held": true,
+   "measured": "500 of 500 garbage inputs exited cleanly, silently, inside 2 s; jobs made: false; error lines: 500"
+  },
+  {
+   "id": "E7",
+   "kind": "property",
+   "claim": "A past job is never dressed up: every imported transcript, having no sealed intent, fails P1.",
+   "held": true,
+   "measured": "31 of 31 imported past jobs failed P1"
+  }
+ ],
+ "held": 6,
+ "failed": 1
+}
