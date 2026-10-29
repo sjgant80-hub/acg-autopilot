@@ -33,11 +33,11 @@ async function go() {
 
 async function receipts() {
   const get = (p) => fetch(p, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const rs = (await Promise.all(['receipts/organ-1.json', 'receipts/organ-1b.json', 'receipts/organ-1c.json'].map(get))).filter(Boolean);
+  const rs = (await Promise.all(['receipts/organ-1.json', 'receipts/organ-1b.json', 'receipts/organ-1c.json', 'receipts/organ-2.json'].map(get))).filter(Boolean);
   if (!rs.length) { $('receipts').textContent = 'The receipts did not load.'; return; }
   const held = rs.reduce((n, r) => n + r.held, 0), all = rs.reduce((n, r) => n + r.verdicts.length, 0);
   $('hdr-sum').textContent = held + ' of ' + all + ' sealed claims held so far' + (all - held ? ', ' + (all - held) + ' failed and kept' : '') + '.';
-  $('receipts').innerHTML = rs.map((r) => '<div class="panel"><h3>Organ ' + esc(r.organ) + ' · ' + r.held + ' of ' + r.verdicts.length + ' held</h3><p class="dim">Sealed in <a href="https://github.com/sjgant80-hub/acg-autopilot/commit/' + esc(r.sealed.commit) + '">' + esc(r.sealed.commit.slice(0, 7)) + '</a>, before its code. Receipt: <a href="receipts/organ-' + esc(r.organ) + '.json">receipts/organ-' + esc(r.organ) + '.json</a>.</p>'
+  $('receipts').innerHTML = rs.map((r) => '<div class="panel"><h3>Organ ' + esc(r.organ) + ' · ' + r.held + ' of ' + r.verdicts.length + ' held</h3><p class="dim">Sealed in <a href="https://github.com/sjgant80-hub/acg-autopilot/commit/' + esc(r.sealed.commit) + '">' + esc(r.sealed.commit.slice(0, 7)) + '</a>, before its code. Receipt: <a href="receipts/organ-' + esc(r.organ) + '.json">receipts/organ-' + esc(r.organ) + '.json</a>.' + (r.local ? ' Measured on the machine that holds its data (' + esc(r.local) + ').' : '') + '</p>'
     + r.verdicts.map((v) => '<p><span class="tag ' + (v.held ? 'pass' : 'fail') + '">' + (v.held ? 'HELD' : 'FAILED') + '</span> <b>' + esc(v.id) + '</b> ' + esc(v.claim) + '<br><span class="dim">measured: ' + esc(v.measured) + '</span></p>').join('') + '</div>').join('');
   const one = rs.find((r) => r.organ === 1), b = rs.find((r) => r.organ === '1b'), c = rs.find((r) => r.organ === '1c');
   $('paper-result').textContent = (one ? 'Organ 1: ' + one.held + ' of ' + one.verdicts.length + ' sealed claims held; ' + one.verdicts.filter((v) => !v.held).map((v) => v.id + ' failed (' + v.measured + ')').join('; ') + '. ' : '')

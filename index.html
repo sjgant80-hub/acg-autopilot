@@ -16,7 +16,7 @@
   <p class="dim">Built to feed the AI Craftspeople Guild’s process-review tool, acg-assess (Alex’s design). Its rubric governs; the checks here are a proposal to align with it. <span id="hdr-sum"></span></p>
 </header>
 <nav>
-  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
+  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#record">Record a job</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
 </nav>
 
 <section id="what">
@@ -52,15 +52,28 @@
   </div>
 </section>
 
+<section id="record">
+  <h2><small>Record a job</small>Capture a Claude Code job as it happens, or import one that is finished</h2>
+  <p>The recorder sits on Claude Code’s hooks, in the project you work in; nothing is installed for the whole machine. You seal the intent before the first prompt. From then on every prompt (the start of model work), every tool use and every file read or written is appended to the job’s log, and every line carries the hash of the line before it, so a changed, removed or reordered line shows. Files are kept by their hash. The recorder never blocks Claude Code and never prints anything into it: an error goes to its own file.</p>
+  <ol class="steps">
+    <li><b>Install, per project.</b> Copy <span class="mono">examples/claude-settings.json</span> into the project’s <span class="mono">.claude/settings.json</span>, with the path to <span class="mono">bin/acg.mjs</span> filled in, and add <span class="mono">.acg/</span> to <span class="mono">.gitignore</span>.</li>
+    <li><b>Seal the intent first.</b> <span class="mono">acg seal --goal "…" --allowed Read,Edit --criteria "tests pass"</span>. It waits, and binds to the next job the hook sees: recorded before the first prompt.</li>
+    <li><b>Work as usual.</b> The hook writes the job down. The agent or you add what the hooks cannot see: <span class="mono">acg note assumption --text "…" --surfaced</span>, a question and its answer, an approval, a check by someone else, a re-run, the acceptance; <span class="mono">acg claim</span> for each final claim, pointing at its evidence.</li>
+    <li><b>Check and judge.</b> <span class="mono">acg verify</span> checks the chain; <span class="mono">acg judge</span> runs the eleven checks on the record; <span class="mono">acg record</span> writes it out for review.</li>
+    <li><b>A finished job.</b> <span class="mono">acg import &lt;transcript.jsonl&gt;</span> turns a past Claude Code transcript into a record. It sealed no intent, and the record says “none sealed”, so it fails P1: the Autopilot never dresses up a past job.</li>
+  </ol>
+  <p class="dim">Claude Code’s hooks fire on prompts and tool uses, not on each model request, so a live record marks each prompt as the start of model work; the importer, reading the transcript, records each request.</p>
+</section>
+
 <section id="how">
   <h2><small>How it works</small>From a job to a reviewed record</h2>
   <div class="diagram">
     <svg viewBox="0 0 1000 200" role="img" aria-labelledby="dg-t">
-      <title id="dg-t">Capture, normalise, check, flag to a person, sign and file, portfolio. The check step is built and measured; the others are the next organs.</title>
+      <title id="dg-t">Capture, normalise, check, flag to a person, sign and file, portfolio. Capture, normalise and check are built and measured; the others are the next organs.</title>
       <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="arrow"/></marker></defs>
-      <rect x="5" y="60" width="140" height="80" rx="8"/><text x="75" y="92" text-anchor="middle">1 · capture</text><text x="75" y="114" text-anchor="middle" class="d">intent first, every step</text>
+      <rect x="5" y="60" width="140" height="80" rx="8" class="on"/><text x="75" y="92" text-anchor="middle">1 · capture</text><text x="75" y="114" text-anchor="middle" class="d">intent first, every step</text>
       <path d="M145 100 H170" marker-end="url(#ar)"/>
-      <rect x="170" y="60" width="140" height="80" rx="8"/><text x="240" y="92" text-anchor="middle">2 · normalise</text><text x="240" y="114" text-anchor="middle" class="d">the process record</text>
+      <rect x="170" y="60" width="140" height="80" rx="8" class="on"/><text x="240" y="92" text-anchor="middle">2 · normalise</text><text x="240" y="114" text-anchor="middle" class="d">the process record</text>
       <path d="M310 100 H335" marker-end="url(#ar)"/>
       <rect x="335" y="50" width="160" height="100" rx="10" class="on"/><text x="415" y="86" text-anchor="middle">3 · check</text><text x="415" y="108" text-anchor="middle" class="d">the judge, P0 to P10</text><text x="415" y="128" text-anchor="middle" class="d">built and measured</text>
       <path d="M495 100 H520" marker-end="url(#ar)"/>
@@ -69,7 +82,7 @@
       <rect x="685" y="60" width="140" height="80" rx="8"/><text x="755" y="92" text-anchor="middle">5 · record</text><text x="755" y="114" text-anchor="middle" class="d">signed, re-runnable</text>
       <path d="M825 100 H850" marker-end="url(#ar)"/>
       <rect x="850" y="60" width="145" height="80" rx="8"/><text x="922" y="92" text-anchor="middle">6 · portfolio</text><text x="922" y="114" text-anchor="middle" class="d">with consent</text>
-      <text x="5" y="30" class="d">Organ 1 (check) is live on this page. Capture, the bridge to acg-assess and the portfolio are the next organs, each sealed before it is built.</text>
+      <text x="5" y="30" class="d">Built and measured: capture and normalise (organ 2) and check (organ 1). The bridge to acg-assess and the portfolio are next, each sealed before it is built.</text>
     </svg>
   </div>
   <ol class="steps">
@@ -117,6 +130,10 @@
       <tr><td class="mono">src/record.mjs</td><td>The process record (schema v1), canonical JSON, the intent’s SHA-256 (the platform’s own, so Node and the browser run the same code), evidence pointers.</td></tr>
       <tr><td class="mono">src/judge.mjs</td><td>The checks. <span class="mono">judge()</span> is rubric v1 (P1 to P10, as organ 1 measured it); <span class="mono">assess()</span> is v2 (P0 then P1 to P10); <span class="mono">assessStrict()</span> is v3, which this page runs (the strict P0, then P1 to P10). Pure, total, deterministic.</td></tr>
       <tr><td class="mono">src/schema.mjs</td><td>The record’s schema v1, field by field, and each timeline entry’s fields by its kind; every problem listed with a pointer.</td></tr>
+      <tr><td class="mono">src/log.mjs</td><td>The job’s log: one entry a line, each carrying the hash of the line before; the check that names the first line changed, removed or out of order.</td></tr>
+      <tr><td class="mono">src/normalise.mjs</td><td>A log and its sealed intent turned into a record; the summary written from the log, in plain words.</td></tr>
+      <tr><td class="mono">src/transcript.mjs</td><td>A finished Claude Code transcript turned into a record, honest that no intent was sealed.</td></tr>
+      <tr><td class="mono">bin/acg.mjs · examples/</td><td>The command line and the hook Claude Code calls; the per-project hook settings to copy.</td></tr>
       <tr><td class="mono">tools/suite.mjs</td><td>The seeded planted-failure suite: clean jobs, one failure of each kind, late intents, malformed records.</td></tr>
       <tr><td class="mono">tools/measure-1.mjs · 1b · 1c</td><td>Each organ measured against its sealed claims; CI re-runs both and the receipts must come out byte for byte the same.</td></tr>
       <tr><td class="mono">claims/ · receipts/</td><td>The claims as committed before the code, and what happened.</td></tr>
@@ -143,7 +160,7 @@
   <h3>Roll-out</h3>
   <ol class="steps">
     <li><b>Align the rubric with acg-assess.</b> Map P0 to P10 onto Alex’s rubric; his governs. The rubric id travels with every judgement.</li>
-    <li><b>Capture</b> (organ 2): a recorder around Claude Code and one other harness writes the record as the job runs, intent first.</li>
+    <li><b>Capture</b> (organ 2, built): the recorder on Claude Code’s hooks writes the record as the job runs, intent first. A second harness is still to do.</li>
     <li><b>Bridge</b> (organ 3): records and flags go into acg-assess for review; decisions come back and are signed.</li>
     <li><b>Red team</b> (not yet run): people who did not write the judge, the guild’s red-teamer first, try to make a badly run job pass: hide an assumption, slip in a tool, polish a summary. Every attempt that gets through becomes a planted case in the suite, so the judge has to catch it from then on. This is what answers the shared-author weakness.</li>
     <li><b>Pilot</b> (not yet run): real guild jobs, with members’ consent, measuring how many flags reach a person, how many a reviewer overturns, and what capture costs in time.</li>
@@ -172,8 +189,9 @@
   <h3>Does the agent grade itself?</h3><p>No. The judge is separate code that reads only the record. It never asks the agent anything, and the summary it checks is generated from the log.</p>
   <h3>Can it fail someone automatically?</h3><p>Only on facts a machine can check: the intent recorded late, a tool outside the allowed list, a number with nothing behind it, an output not kept, no independent check, a re-run that did not match, a malformed record. Hidden assumptions, overclaiming, jargon and the quality of a person’s direction are only ever flagged for a reviewer.</p>
   <h3>Is this acg-assess?</h3><p>No. acg-assess is the guild’s review tool, and its rubric governs. This automates the capture and the checks around it and feeds it records and flags.</p>
+  <h3>Can it record a live Claude Code job?</h3><p>Yes, through Claude Code’s own hooks, per project: see <a href="#record">Record a job</a>. It was measured by replaying real past jobs into the hook, a process per event, rather than inside a live session; the receipt says so.</p>
   <h3>Does my data leave my machine?</h3><p>Not to be judged: the judge runs in your browser or on your machine. Sharing a record for review or a portfolio is your choice.</p>
-  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on 2,000 fresh broken records, none passed cleanly. See <a href="#measured">Measured</a>.</p>
+  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on 2,000 fresh broken records, none passed cleanly. And the recorder (organ 2) missed one kind of tampering: cutting off the last lines of a job’s log leaves a shorter log whose lines still each follow the one before. Every other edit was caught. The fix is to anchor where the log ends outside the log, signed, which is the next organ. See <a href="#measured">Measured</a>.</p>
 </section>
 
 <footer>
