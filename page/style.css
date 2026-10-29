@@ -23,3 +23,5 @@ textarea{width:100%;min-height:150px;font-family:var(--mono);font-size:12px;back
 .steps li{margin:6px 0}.callout{border-left:3px solid var(--warn);padding:8px 12px;background:var(--panel);border-radius:6px;margin:12px 0}
 .diagram svg{width:100%;height:auto;max-width:1000px}.diagram text{fill:var(--ink);font:13px var(--sans)}.diagram .d{fill:var(--dim)}.diagram rect{fill:var(--panel);stroke:var(--line);stroke-width:1.5}.diagram rect.on{stroke:var(--accent);stroke-width:2.5}.diagram path{stroke:var(--dim);fill:none;stroke-width:1.5}.diagram .arrow{fill:var(--dim)}
 footer{border-top:1px solid var(--line);margin-top:36px;padding-top:14px;font-size:13px;color:var(--dim)}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font-size:12px}
+select{max-width:100%;min-width:0}
