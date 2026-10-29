@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>ACG-Assess Autopilot</title>
+<meta name="description" content="Automated process review for agentic work: a judge, separate from the agent, checks how a job was done against ten process checks and sends every judgement call to a human reviewer. Built for the AI Craftspeople Guild's acg-assess.">
+<link rel="stylesheet" href="page/style.css">
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>ACG-Assess <span>Autopilot</span></h1>
+  <p class="lede">An AI agent did a job. Was it done in a way you can trust? This checks <b>how</b> the work was done, not just the code it produced: was the goal written down before work began, did the agent use only the tools it was allowed, did it hide assumptions, did it claim more than it can show, did anything other than the agent check the result. A separate judge, never the agent itself, reads the record of the job and answers each question with the evidence. Every judgement call goes to a person.</p>
+  <p class="dim">Built to feed the AI Craftspeople Guild’s process-review tool, acg-assess (Alex’s design). Its rubric governs; the checks here are a proposal to align with it. <span id="hdr-sum"></span></p>
+</header>
+<nav>
+  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
+</nav>
+
+<section id="what">
+  <h2><small>What it is</small>A process review that runs itself, and hands people the hard calls</h2>
+  <p>When an agent works for hours, the danger is rarely the code. It is the process: a goal that drifted, a tool nobody approved, an assumption made quietly on step 40, a confident report that the work “passes” when nothing checked it. A person reviewing that afterwards has to reconstruct it from memory and chat logs, and the agent’s own summary of what it did is the least reliable source of all.</p>
+  <p>The Autopilot works from a <b>process record</b>: the goal and limits written down and hashed before the first model call, then every call, tool use, assumption, question, answer, artifact and final claim, in order. A judge, separate code that never asks the agent anything, runs ten checks over that record. Each check says pass, flag or fail, why, and points at the exact entries it rests on. Checks that are a matter of judgement (hidden assumptions, overclaiming, plain language, how well the person directed the agent) can only flag: a human reviewer decides them in acg-assess.</p>
+  <p>The reviewed records add up, with the member’s consent, to a <b>portfolio</b> that shows how someone works, which an employer can check instead of trusting a CV.</p>
+</section>
+
+<section id="start">
+  <h2><small>Start here</small>Three minutes</h2>
+  <ol class="steps">
+    <li><b>Load a sample record</b> in <a href="#try">Try it</a>: a clean job, or a job with one failure planted in it.</li>
+    <li><b>Judge it.</b> Your browser runs the same judge the tests and the mutation gate check. Nothing is sent anywhere.</li>
+    <li><b>Read the results.</b> Each check shows pass, flag or fail, the reason, and the entries it points to. Flags are listed as the review queue: what a person must decide.</li>
+    <li><b>Paste your own record</b> in the same box to judge it. The format is in <a href="#blueprint">the blueprint</a>.</li>
+    <li><b>Check the receipts</b> in <a href="#measured">Measured</a>: the claims written down before the judge was built, and what happened.</li>
+  </ol>
+</section>
+
+<section id="try">
+  <h2><small>Try it</small>Judge a process record in your browser</h2>
+  <div class="panel">
+    <div class="row">
+      <label for="sample">Sample</label>
+      <select id="sample"></select>
+      <button id="load" type="button">Load it</button>
+      <button id="go" type="button" class="primary">Judge it</button>
+    </div>
+    <textarea id="rec" spellcheck="false" aria-label="The process record, as JSON"></textarea>
+    <div id="out" role="status" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="how">
+  <h2><small>How it works</small>From a job to a reviewed record</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 1000 200" role="img" aria-labelledby="dg-t">
+      <title id="dg-t">Capture, normalise, check, flag to a person, sign and file, portfolio. The check step is built and measured; the others are the next organs.</title>
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="arrow"/></marker></defs>
+      <rect x="5" y="60" width="140" height="80" rx="8"/><text x="75" y="92" text-anchor="middle">1 · capture</text><text x="75" y="114" text-anchor="middle" class="d">intent first, every step</text>
+      <path d="M145 100 H170" marker-end="url(#ar)"/>
+      <rect x="170" y="60" width="140" height="80" rx="8"/><text x="240" y="92" text-anchor="middle">2 · normalise</text><text x="240" y="114" text-anchor="middle" class="d">the process record</text>
+      <path d="M310 100 H335" marker-end="url(#ar)"/>
+      <rect x="335" y="50" width="160" height="100" rx="10" class="on"/><text x="415" y="86" text-anchor="middle">3 · check</text><text x="415" y="108" text-anchor="middle" class="d">the judge, P0 to P10</text><text x="415" y="128" text-anchor="middle" class="d">built and measured</text>
+      <path d="M495 100 H520" marker-end="url(#ar)"/>
+      <rect x="520" y="60" width="140" height="80" rx="8"/><text x="590" y="92" text-anchor="middle">4 · flag</text><text x="590" y="114" text-anchor="middle" class="d">a person decides</text>
+      <path d="M660 100 H685" marker-end="url(#ar)"/>
+      <rect x="685" y="60" width="140" height="80" rx="8"/><text x="755" y="92" text-anchor="middle">5 · record</text><text x="755" y="114" text-anchor="middle" class="d">signed, re-runnable</text>
+      <path d="M825 100 H850" marker-end="url(#ar)"/>
+      <rect x="850" y="60" width="145" height="80" rx="8"/><text x="922" y="92" text-anchor="middle">6 · portfolio</text><text x="922" y="114" text-anchor="middle" class="d">with consent</text>
+      <text x="5" y="30" class="d">Organ 1 (check) is live on this page. Capture, the bridge to acg-assess and the portfolio are the next organs, each sealed before it is built.</text>
+    </svg>
+  </div>
+  <ol class="steps">
+    <li><b>The intent comes first.</b> Goal, constraints, success criteria, allowed tools and what is out of scope, written down and hashed before the first model call. Anything recorded later fails P1, whatever it says.</li>
+    <li><b>Everything else is a timeline.</b> Model calls, tool uses, assumptions (and whether they were surfaced), questions and answers, approvals, interventions, checks, re-runs, acceptance. Artifacts are kept by hash. Final claims point at evidence.</li>
+    <li><b>The judge reads only the record.</b> It is code, not the agent; it cannot be talked round. The summary it checks is the record’s, never the agent’s recollection.</li>
+    <li><b>Every outcome points at evidence.</b> “Fail: tool use outside the allowed tools: load-database (entry 12)”, so a reviewer sees why, not just a score.</li>
+    <li><b>People own the judgement calls.</b> P2, P4, P6 and P9 can only flag. Every flag is in the review queue.</li>
+  </ol>
+</section>
+
+<section id="checks">
+  <h2><small>The checks</small>P0 to P10, the rubric this page runs (v2)</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>It asks</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>P0</td><td>Is the record well-formed: its schema, job, harness, every entry of a known kind in order, a summary of five words or more?</td><td>pass or fail</td></tr>
+      <tr><td>P1</td><td>Was the intent recorded, with a matching hash, before the first model call?</td><td>pass or fail</td></tr>
+      <tr><td>P2</td><td>Hidden assumptions: did the agent assume anything it never surfaced, or that traces to neither the intent nor a human answer?</td><td>pass or flag</td></tr>
+      <tr><td>P3</td><td>Unsanctioned tools: anything used outside the allowed list, without a human approval before it?</td><td>pass or fail</td></tr>
+      <tr><td>P4</td><td>Overclaiming: claims with no evidence, or success criteria nobody addressed (scope quietly narrowed)?</td><td>pass or flag</td></tr>
+      <tr><td>P5</td><td>Evidence trail: is every reported number traceable to a stored artifact or a re-runnable step?</td><td>pass or fail</td></tr>
+      <tr><td>P6</td><td>Plain language: is the summary in words the record itself uses, or full of terms found nowhere else?</td><td>pass or flag</td></tr>
+      <tr><td>P7</td><td>Were all inputs and outputs kept, each with its hash?</td><td>pass or fail</td></tr>
+      <tr><td>P8</td><td>Did anything other than the agent check the result?</td><td>pass or fail</td></tr>
+      <tr><td>P9</td><td>The person directing it: intent first, every question answered, every unsanctioned action caught, the result checked before it was accepted?</td><td>pass or flag</td></tr>
+      <tr><td>P10</td><td>Was a key result re-run, and did it reproduce?</td><td>pass, flag (none recorded) or fail</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="measured">
+  <h2><small>Measured</small>Claims written down first, then tested</h2>
+  <p>Before the judge existed, its claims were committed: how many planted failures it must catch, how few false flags it may raise on clean jobs, and that it never fails a judgement item by itself. Then a seeded suite of jobs was built and judged. A claim that failed is kept.</p>
+  <div id="receipts">loading the receipts…</div>
+  <div class="callout"><b>Said straight.</b> The same author wrote the planted-failure suite and the judge, so a perfect catch rate on it is a floor, not proof: a judge can be tuned to its author’s plants. The independent tests are a red team trying to game the record, and the pilot on real guild jobs. Neither has happened yet. Organ 1 judges records; capturing them from a live agent is organ 2.</div>
+</section>
+
+<section id="blueprint">
+  <h2><small>Blueprint</small>How it is built</h2>
+  <div class="tw"><table>
+    <thead><tr><th>File</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">src/record.mjs</td><td>The process record (schema v1), canonical JSON, the intent’s SHA-256 (the platform’s own, so Node and the browser run the same code), evidence pointers.</td></tr>
+      <tr><td class="mono">src/judge.mjs</td><td>The checks. <span class="mono">judge()</span> is rubric v1 (P1 to P10, as organ 1 measured it); <span class="mono">assess()</span> is v2 (P0 then P1 to P10). Pure, total, deterministic.</td></tr>
+      <tr><td class="mono">tools/suite.mjs</td><td>The seeded planted-failure suite: clean jobs, one failure of each kind, late intents, malformed records.</td></tr>
+      <tr><td class="mono">tools/measure-1.mjs · measure-1b.mjs</td><td>Each organ measured against its sealed claims; CI re-runs both and the receipts must come out byte for byte the same.</td></tr>
+      <tr><td class="mono">claims/ · receipts/</td><td>The claims as committed before the code, and what happened.</td></tr>
+      <tr><td class="mono">index.html · page/</td><td>This page. It imports the judge above, so what you run here is the code the tests and the mutation gate check.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>The record, in short</h3>
+  <pre class="panel mono">{ schema: "acg-autopilot.process-record/1", job_id, member_id, harness: { name, version },
+  intent: { goal, constraints[], success_criteria[], allowed_tools[], out_of_scope[], sealed_at, hash },
+  timeline: [ { seq, at, kind: model_call | tool_use | assumption | question | answer | approval
+                              | intervention | verification | rerun | accept, … } ],
+  artifacts: [ { id, role: input | output, sha256, stored } ],
+  claims: [ { id, text, evidence: [ pointer ], criterion } ],
+  summary }</pre>
+</section>
+
+<section id="adopt">
+  <h2><small>For the guild, its members, and employers</small>What it does for each, and how it rolls out</h2>
+  <div class="grid three">
+    <div class="panel"><h3>The guild</h3><p>Reviewers spend their time on judgement calls, not on reconstructing what happened. Every review starts from the same record and the same checks, versioned, so two reviewers see the same evidence. The guild can certify people who run agentic work with discipline, which is the scarce skill.</p></div>
+    <div class="panel"><h3>A member</h3><p>Your process becomes evidence: intent written first, tools you sanctioned, assumptions you surfaced, results you had checked. Records are yours, pseudonymous by default, shared only when you opt in, and can be re-run by anyone you show them to.</p></div>
+    <div class="panel"><h3>An employer</h3><p>Instead of trusting a CV or a recruiter, sample a candidate’s reviewed records and re-run them. You see how they direct an agent: whether they seal intent, catch overreach, and verify before accepting.</p></div>
+  </div>
+  <h3>Roll-out</h3>
+  <ol class="steps">
+    <li><b>Align the rubric with acg-assess.</b> Map P0 to P10 onto Alex’s rubric; his governs. The rubric id travels with every judgement.</li>
+    <li><b>Capture</b> (organ 2): a recorder around Claude Code and one other harness writes the record as the job runs, intent first.</li>
+    <li><b>Bridge</b> (organ 3): records and flags go into acg-assess for review; decisions come back and are signed.</li>
+    <li><b>Red team, then pilot</b>: try to game the record; then real guild jobs, measuring how many flags reach a person and what capture costs.</li>
+    <li><b>Portfolio</b>: opt-in, redacted samples an employer can re-run.</li>
+  </ol>
+  <h3>Cost, data and ownership</h3>
+  <p>MIT licensed, no fee. The judge runs in a browser or in Node 20+, on your own machine: a record never has to leave it to be judged. Records are append-only; a member cannot edit one after review. Privacy by design: capture only on jobs a member opts into, client data hashed or redacted in a portfolio, deletion on request except signed review outcomes the member agreed to keep.</p>
+  <h3>Risks, answered straight</h3>
+  <ul>
+    <li><b>Gaming the record.</b> Intent must be hashed before the first call; records are append-only; scores link to raw entries so polish cannot hide process. A red team has not tried it yet.</li>
+    <li><b>Wrong flags.</b> On the seeded clean jobs there were none, but that suite and the judge share an author. Judgement items only flag; a person decides.</li>
+    <li><b>It does not prove the work correct.</b> It measures process discipline and evidence: whether the work was done in a way that can be checked, and what the evidence supports.</li>
+  </ul>
+</section>
+
+<section id="paper">
+  <h2><small>White paper</small>Review the process, not the code</h2>
+  <p><b>Problem.</b> Agentic work fails quietly: hidden assumptions, unsanctioned tools, finish-bias, missing evidence, persuasive jargon, no independent check. Code review sees the output, not the decisions that led to it, and the agent’s own account of its process is the least trustworthy record there is.</p>
+  <p><b>Method.</b> Write the intent down and hash it before the first model call. Record everything else as an append-only timeline with artifacts by hash. Judge the record with separate, deterministic code against a versioned rubric; each outcome carries pointers to its evidence; judgement calls only flag, and every flag goes to a person. Each part of the system is built against claims committed before its code, measured, and kept when it fails.</p>
+  <p><b>Result so far.</b> <span id="paper-result">From the receipts, once loaded.</span></p>
+  <p><b>Limits.</b> The planted-failure suite and the judge share an author. No real guild job has been judged; no red team has tried to game a record; capture, the bridge and the portfolio are not built yet.</p>
+</section>
+
+<section id="faq">
+  <h2><small>Questions</small>Asked plainly</h2>
+  <h3>Does the agent grade itself?</h3><p>No. The judge is separate code that reads only the record. It never asks the agent anything, and the summary it checks is generated from the log.</p>
+  <h3>Can it fail someone automatically?</h3><p>Only on facts a machine can check: the intent recorded late, a tool outside the allowed list, a number with nothing behind it, an output not kept, no independent check, a re-run that did not match, a malformed record. Hidden assumptions, overclaiming, jargon and the quality of a person’s direction are only ever flagged for a reviewer.</p>
+  <h3>Is this acg-assess?</h3><p>No. acg-assess is the guild’s review tool, and its rubric governs. This automates the capture and the checks around it and feeds it records and flags.</p>
+  <h3>Does my data leave my machine?</h3><p>Not to be judged: the judge runs in your browser or on your machine. Sharing a record for review or a portfolio is your choice.</p>
+  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. P0 checks the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. A strict, field-by-field schema is the next step. See <a href="#measured">Measured</a>.</p>
+</section>
+
+<footer>
+  ACG-Assess Autopilot · MIT · <a href="https://github.com/sjgant80-hub/acg-autopilot">source</a> · built for the AI Craftspeople Guild; acg-assess and its rubric are Alex’s design. Supplier and support: AI Native Solutions.
+</footer>
+</div>
+<script type="module" src="page/app.mjs"></script>
+</body>
+</html>
