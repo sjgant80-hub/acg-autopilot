@@ -1,0 +1,60 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": "1b",
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-1b.json",
+  "commit": "ed770c7e9c356e49bcb35d549eda86e33b9338fa",
+  "claimsSha256": "3adb14e73de4d0c68211c698a307b2e288ad89888f14e1ff727609b8086b215f"
+ },
+ "facts": {
+  "rubric": "acg-autopilot.rubric/p0-p10/v2",
+  "B1": {
+   "malformed": 2000,
+   "unmade": 16,
+   "threw": 0,
+   "failed": 1728,
+   "viaP0": 1373,
+   "cleanPass": 3,
+   "deterministic": 1984,
+   "unchangedDamagesReplaced": 18
+  },
+  "B2": {
+   "clean": 500,
+   "p0Passed": 500,
+   "otherFlagsOrFails": 0
+  },
+  "B3": {
+   "planted": 500,
+   "caught": 500,
+   "p0PassedOnPlanted": 500,
+   "deterministic": 1000,
+   "judged": 1000
+  }
+ },
+ "verdicts": [
+  {
+   "id": "B1",
+   "kind": "property",
+   "claim": "Every malformed record fails: on 2,000 fresh malformed records, each guaranteed to differ from its clean source, none is a clean pass, and each fails P0 or P1.",
+   "held": false,
+   "measured": "2000 fresh malformed records, each differing from its source (18 damages that changed nothing were replaced): failed 1728 (1373 at P0), clean passes 3, threw 0, deterministic 1984"
+  },
+  {
+   "id": "B2",
+   "kind": "prediction",
+   "claim": "P0 adds no false flags: on organ 1's 500 clean jobs, P0 passes every one, and the other ten checks give exactly what they gave in organ 1 (0 flags or fails).",
+   "held": true,
+   "measured": "P0 passed 500 of 500 clean jobs; the other ten gave 0 flags or fails"
+  },
+  {
+   "id": "B3",
+   "kind": "property",
+   "claim": "Nothing organ 1 caught is lost: with P0 in place, all 500 planted failures are still caught by their check with the pointer to the planted event, and the judge is still total and deterministic over every record judged.",
+   "held": true,
+   "measured": "planted failures still caught with their pointer: 500 of 500 (P0 passed 500 of them); the same judgement twice on 1000 of 1000"
+  }
+ ],
+ "held": 2,
+ "failed": 1
+}
