@@ -13,11 +13,13 @@ jobs:
       - name: the judge's mutation gate - every mutant of src/judge.mjs and src/record.mjs must be killed by the tests
         run: |
           git clone --depth 1 --branch v0.6 https://github.com/sjgant80-hub/witness.git /tmp/witness6
-          for k in src/judge.mjs src/record.mjs; do
-            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test test/judge.test.mjs test/wellformed.test.mjs | tee /tmp/w.txt
+          for k in src/judge.mjs src/record.mjs src/schema.mjs; do
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test test/judge.test.mjs test/wellformed.test.mjs test/schema.test.mjs | tee /tmp/w.txt
             grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
           done
       - name: organ 1 - the planted-failure suite judged again; the receipt must come out byte for byte the same
         run: node tools/measure-1.mjs --check
       - name: organ 1b - P0 (well-formed) over fresh malformed records and organ 1's jobs; the receipt must come out byte for byte the same
         run: node tools/measure-1b.mjs --check
+      - name: organ 1c - the strict schema over fresh damage, the records 1b passed, and organ 1's jobs; the receipt must come out byte for byte the same
+        run: node tools/measure-1c.mjs --check

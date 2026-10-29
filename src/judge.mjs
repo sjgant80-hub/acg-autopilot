@@ -7,6 +7,7 @@
 // The rubric is this spec's proposal, to be aligned with the guild's acg-assess rubric, which governs; its id is in
 // every judgement, so a change to the checks shows.
 import { list, text, resolves, INTENT_FIELDS, KINDS, SCHEMA } from './record.mjs';
+import { schemaCheck } from './schema.mjs';
 
 export const RUBRIC = Object.freeze({ id: 'acg-autopilot.rubric/p1-p10/v1', judgement: Object.freeze(['P2', 'P4', 'P6', 'P9']) });
 /** P6: words in a summary that need no explaining, and the limits of unexplained and very long words */
@@ -167,4 +168,16 @@ export function assess(record, facts = {}) {
   const counts = { pass: 0, flag: 0, fail: 0 };
   for (const x of results) counts[x.outcome]++;
   return { rubric: RUBRIC_V2.id, job_id: j.job_id, results, review: results.filter((x) => x.outcome === 'flag').map((x) => x.id), counts };
+}
+
+// ── organ 1c: the strict P0 (src/schema.mjs, claims/organ-1c.json). assessStrict() is rubric v3: the record checked
+// field by field, then the ten checks of judge(). judge() and assess() are unchanged, as organs 1 and 1b measured them.
+export const RUBRIC_V3 = Object.freeze({ id: 'acg-autopilot.rubric/p0-strict-p10/v3', judgement: RUBRIC.judgement });
+export function assessStrict(record, facts = {}) {
+  let p0;
+  try { const s = schemaCheck(record); p0 = r(s.outcome, s.why, s.evidence); } catch { p0 = r('fail', 'the record could not be read', []); }
+  const j = judge(record, facts), results = [{ id: 'P0', outcome: p0.outcome, why: p0.why, evidence: p0.evidence, judgement: false }, ...j.results];
+  const counts = { pass: 0, flag: 0, fail: 0 };
+  for (const x of results) counts[x.outcome]++;
+  return { rubric: RUBRIC_V3.id, job_id: j.job_id, results, review: results.filter((x) => x.outcome === 'flag').map((x) => x.id), counts };
 }
