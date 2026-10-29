@@ -6,7 +6,7 @@
 //
 // The rubric is this spec's proposal, to be aligned with the guild's acg-assess rubric, which governs; its id is in
 // every judgement, so a change to the checks shows.
-import { list, text, resolves, INTENT_FIELDS } from './record.mjs';
+import { list, text, resolves, INTENT_FIELDS, KINDS, SCHEMA } from './record.mjs';
 
 export const RUBRIC = Object.freeze({ id: 'acg-autopilot.rubric/p1-p10/v1', judgement: Object.freeze(['P2', 'P4', 'P6', 'P9']) });
 /** P6: words in a summary that need no explaining, and the limits of unexplained and very long words */
@@ -130,4 +130,41 @@ export function judge(record, facts = {}) {
   const counts = { pass: 0, flag: 0, fail: 0 };
   for (const x of results) counts[x.outcome]++;
   return { rubric: RUBRIC.id, job_id: isObj(record) && typeof record.job_id === 'string' ? record.job_id : null, results, review: results.filter((x) => x.outcome === 'flag').map((x) => x.id), counts };
+}
+
+// ── organ 1b: P0, the record is well-formed (claims/organ-1b.json). judge() above stays rubric v1, as organ 1 measured
+// it; assess() is rubric v2: P0, then P1 to P10. P0 is not a judgement item: a record that is not well-formed fails.
+export const RUBRIC_V2 = Object.freeze({ id: 'acg-autopilot.rubric/p0-p10/v2', judgement: RUBRIC.judgement });
+export const MIN_SUMMARY_WORDS = 5;
+export function wellFormed(record) {
+  if (!isObj(record)) return r('fail', 'not a record', []);
+  const bad = [];
+  if (record.schema !== SCHEMA) bad.push('its schema is not ' + SCHEMA);
+  if (!text(record.job_id).trim()) bad.push('it has no job id');
+  if (!isObj(record.harness) || !text(record.harness.name).trim()) bad.push('it does not name its harness');
+  const tl = record.timeline, evidence = [];
+  if (!Array.isArray(tl)) bad.push('it has no timeline');
+  else {
+    let last = -1, odd = 0;
+    tl.forEach((e, i) => {
+      const ok = isObj(e) && KINDS.includes(e.kind) && Number.isSafeInteger(e.seq) && e.seq > last && Number.isFinite(time(e.at));
+      if (ok) last = e.seq; else { odd++; evidence.push(isObj(e) && Number.isSafeInteger(e.seq) ? at(e.seq) : { at: 'timeline', index: i }); }
+    });
+    if (odd) bad.push(odd + ' timeline entr' + (odd === 1 ? 'y' : 'ies') + ' not of a known kind, with a seq in order and a time');
+  }
+  for (const part of ['artifacts', 'claims']) {
+    const xs = record[part];
+    if (!Array.isArray(xs) || xs.some((x) => !isObj(x) || !text(x.id).trim())) bad.push('its ' + part + ' are not a list of entries each with an id');
+  }
+  if ((text(record.summary).match(/[A-Za-z]{2,}/g) || []).length < MIN_SUMMARY_WORDS) bad.push('its summary is under ' + MIN_SUMMARY_WORDS + ' words');
+  return bad.length ? r('fail', 'the record is not well-formed: ' + bad.join('; '), evidence) : r('pass', 'the record is well-formed');
+}
+/** assess(record, facts) → rubric v2: P0, then the ten checks of judge() */
+export function assess(record, facts = {}) {
+  let p0;
+  try { p0 = wellFormed(record); } catch { p0 = r('fail', 'the record could not be read', []); }
+  const j = judge(record, facts), results = [{ id: 'P0', outcome: p0.outcome, why: p0.why, evidence: p0.evidence, judgement: false }, ...j.results];
+  const counts = { pass: 0, flag: 0, fail: 0 };
+  for (const x of results) counts[x.outcome]++;
+  return { rubric: RUBRIC_V2.id, job_id: j.job_id, results, review: results.filter((x) => x.outcome === 'flag').map((x) => x.id), counts };
 }
