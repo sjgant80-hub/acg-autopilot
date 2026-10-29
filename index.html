@@ -81,6 +81,14 @@
     <li><b>So a log cut short is refused</b>, and so is one rewritten from scratch with fresh hashes: neither ends where the recorder signed, and a forger cannot re-sign without the recorder’s key.</li>
     <li><b>And a judgement cannot be dressed up:</b> it must be what the judge gives when it is run again, byte for byte.</li>
   </ol>
+  <h3>How each party signs</h3>
+  <p>Each runs the command line on their own machine with their own key: the recorder signs when the job is bundled (<span class="mono">acg bundle</span>), the judge signs the judgement in the same step, and a reviewer, after looking at the flags, signs each decision (<span class="mono">acg review --check P2 --decision upheld --note "why"</span>), which adds their signature to the same bundle. Only public keys are shared: a guild keeps a trust list of the recorder, judge and reviewer keys it accepts.</p>
+  <h3>What a signature proves, and what it does not</h3>
+  <ul>
+    <li><b>It proves</b> that whoever holds a trusted key signed exactly this record, this log’s end and this judgement, and that nothing has been changed, cut or rewritten since. Measured on 1,000 signed jobs and on 31 real ones: every attack tried was refused.</li>
+    <li><b>It does not prove</b> the key was not stolen. Keys are kept today as plain files in each machine’s <span class="mono">.acg/keys</span> folder: no passphrase, no hardware key, no rotation or revocation yet. Someone who copies a seed can sign as that party. Guarding keys properly (a passphrase, a hardware key, revoking a lost one) is not built yet, and is said here so nobody relies on it.</li>
+    <li><b>It does not prove the work was good.</b> It proves the record of how it was done is the one that was signed.</li>
+  </ul>
   <div class="panel">
     <h3>Try it: sign a sample, then tamper with it</h3>
     <p class="dim">Your browser builds a bundle from a sample job and signs it with three public demonstration keys (never real ones), then checks it. Each button tampers with a copy and checks again.</p>
