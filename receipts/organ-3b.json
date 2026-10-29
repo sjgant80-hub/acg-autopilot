@@ -1,0 +1,27 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": "3b",
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-3b.json",
+  "commit": "9b88935d1d744094201eab44aa71bcb8c307cd3e",
+  "claimsSha256": "c6acb020e6826feb784ce3e3e34fb9c53c2c2bb6f41a93c3a59219760d9bf5a5"
+ },
+ "facts": {
+  "bundles": 1000,
+  "falsifiedDiffered": 1000,
+  "falseRefused": 1000,
+  "trueVerified": 1000
+ },
+ "verdicts": [
+  {
+   "id": "F2b",
+   "kind": "property",
+   "claim": "A false judgement is refused: for each of the 1,000, the judge's key signing the true judgement with one check's outcome changed (the first check, passed made failed, anything else made passed) is refused, and the true judgement signed the same way verifies.",
+   "held": true,
+   "measured": "1000 of 1000 false judgements refused (each differing from the truth: 1000); the true judgement, signed the same way, verified 1000 of 1000"
+  }
+ ],
+ "held": 1,
+ "failed": 0
+}
