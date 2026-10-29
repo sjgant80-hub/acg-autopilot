@@ -1,0 +1,15 @@
+{
+ "kind": "acg-autopilot.claims",
+ "organ": 3,
+ "v": 1,
+ "sealed": "Written and committed before src/sign.mjs, src/bundle.mjs or tools/measure-3.mjs existed. Disclosed: designed after organ 2's E5 failed (cutting off the end of a log goes unseen by the chain alone), and after the page said a whole log rewritten with fresh hashes would go unseen too. E5's failed verdict is kept.",
+ "what": "Organ 3, signed records (the spec's signatures: recorder, judge, reviewer, Ed25519, the platform's own WebCrypto so Node and the browser verify alike). A bundle is the record, its log, and up to three signatures: the recorder's over the record's hash and where its log ends (the last line's hash and the number of lines); the judge's over the record's hash, the rubric and the hash of the judgement; and a reviewer's over the record's hash and their decision on each flagged check. Verifying a bundle checks each signature against a trust list of public keys, that the log verifies and ends where the recorder signed, that the record's timeline is the log's, that re-running the judge gives the judgement signed, and that the reviewer decided only on checks that were flagged.",
+ "suite": "1,000 synthetic jobs: organ 1's 500 clean and 500 planted, each written as a log the way the recorder writes one and turned into a record, then signed with three fixed demonstration keys (recorder, judge, reviewer; reviewer decisions on every flag). An attacker holds a fourth key, on no trust list. Re-runnable anywhere, so CI re-derives it. F5 alone uses organ 2's 31 real logs on this machine.",
+ "claims": [
+  { "id": "F1", "kind": "property", "claim": "The end of a log is anchored: across the 1,000 bundles, every one-line edit (a changed field, a removed line, two adjacent lines swapped), every cut of the last 1 to 5 lines, and every whole log rewritten with fresh hashes by someone without the recorder's key fails verification; every untouched bundle verifies.", "bar": { "rate": 1 } },
+  { "id": "F2", "kind": "property", "claim": "Forgery is refused: for each of the 1,000, a bundle re-signed with the attacker's key, a recorder signature moved onto another job's record, a judge's signature over a judgement a re-run does not give, and a reviewer's decisions moved onto another record are each refused.", "bar": { "rate": 1 } },
+  { "id": "F3", "kind": "property", "claim": "The judgement re-runs: for every one of the 1,000, judging the record again gives byte for byte the judgement whose hash the judge signed.", "bar": { "rate": 1 } },
+  { "id": "F4", "kind": "property", "claim": "Keys stay private: no private key, in any form it is held (raw, PKCS#8, hex or base64), appears in any record, log, bundle or receipt the measurement writes.", "bar": { "rate": 1 } },
+  { "id": "F5", "kind": "property", "claim": "Organ 2's gap is closed on real jobs: on the 31 real logs (on this machine), once signed, every one-line edit and every cut of the last line fails verification, including the kind organ 2's chain alone missed.", "bar": { "rate": 1 } }
+ ]
+}
