@@ -28,6 +28,25 @@ import { factsOf } from './src/record.mjs';
 const judgement = assessStrict(record, await factsOf(record));   // { rubric, results: [P0..P10], review, counts }
 ```
 
+## Record a job (organ 2: capture)
+
+In the project you work in, copy `examples/claude-settings.json` to `.claude/settings.json` (or merge its `hooks`), with
+the path to `bin/acg.mjs` filled in, and add `.acg/` to `.gitignore`. Nothing is installed globally. Then:
+
+```
+node /path/to/acg-autopilot/bin/acg.mjs seal --goal "what the job is for" --allowed Read,Edit --criteria "tests pass"
+#   ...run the job in Claude Code: each prompt, tool use and file read or written is appended to .acg/jobs/<session>/log.jsonl
+node /path/to/acg-autopilot/bin/acg.mjs note assumption --text "the header row is not data" --surfaced --basis intent
+node /path/to/acg-autopilot/bin/acg.mjs claim --id c1 --text "all 40 tests pass" --evidence timeline:12 --criterion "tests pass"
+node /path/to/acg-autopilot/bin/acg.mjs verify && node /path/to/acg-autopilot/bin/acg.mjs judge
+node /path/to/acg-autopilot/bin/acg.mjs import ~/.claude/projects/<project>/<session>.jsonl --out past-job.json   # a finished job
+```
+
+The intent you seal waits as the pending intent and binds to the next job the hook sees, so it is recorded before the
+first prompt. Every log line carries the hash of the line before it. The hook never blocks Claude Code and never prints:
+an error goes to `.acg/errors.log`. An imported past job sealed no intent, and its record says so ("none sealed"), so it
+fails P1.
+
 ## How it is built
 
 Each organ's claims are committed before its code (`claims/`), measured by a seeded suite (`tools/`), and the result
