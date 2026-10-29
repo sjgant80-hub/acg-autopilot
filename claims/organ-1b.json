@@ -1,0 +1,13 @@
+{
+ "kind": "acg-autopilot.claims",
+ "organ": "1b",
+ "v": 1,
+ "sealed": "Written and committed after organ 1 was measured (receipts/organ-1.json, commit da597e7) and before the well-formedness check (P0) or tools/measure-1b.mjs existed. Disclosed: designed after seeing A5 fail. Of the 150 malformed records organ 1's judge passed cleanly, 95 had garbage timeline entries it skipped, 18 a summary too short to judge, 8 missing metadata, and 29 were not malformed at all (the suite's corruption changed nothing). A5's failed verdict is kept.",
+ "what": "Organ 1b adds P0, the record is well-formed, to the judge, run before the other ten: the schema id, a job id, the harness, every timeline entry an object of a known kind with a whole-number seq in order and a parseable time, every artifact and claim an object with an id, and a summary of at least five words. A record that is not well-formed fails P0. P0 is not a judgement item: it can fail.",
+ "suite": "Fresh malformed records (seeds no earlier measurement used), each made by the same kinds of damage as organ 1's suite, and each checked to differ from the clean job it came from — a record the damage left unchanged is replaced by a fresh damage, so every one is malformed. The clean and planted jobs of organ 1 are judged again with P0 in place.",
+ "claims": [
+  { "id": "B1", "kind": "property", "claim": "Every malformed record fails: on 2,000 fresh malformed records, each guaranteed to differ from its clean source, none is a clean pass, and each fails P0 or P1.", "bar": { "rate": 1 } },
+  { "id": "B2", "kind": "prediction", "claim": "P0 adds no false flags: on organ 1's 500 clean jobs, P0 passes every one, and the other ten checks give exactly what they gave in organ 1 (0 flags or fails).", "bar": { "falseRate": 0 } },
+  { "id": "B3", "kind": "property", "claim": "Nothing organ 1 caught is lost: with P0 in place, all 500 planted failures are still caught by their check with the pointer to the planted event, and the judge is still total and deterministic over every record judged.", "bar": { "rate": 1 } }
+ ]
+}
