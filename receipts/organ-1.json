@@ -1,0 +1,151 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": 1,
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-1.json",
+  "commit": "6b0fc13f3d2b9aef35a46be40e9af77cb3593279",
+  "claimsSha256": "aa03cdc4f0c528699bdb72944604e978eda5a194237cde9bd2a70bc047280ac2"
+ },
+ "facts": {
+  "rubric": "acg-autopilot.rubric/p1-p10/v1",
+  "judged": {
+   "planted": 500,
+   "clean": 500,
+   "late": 200,
+   "all": 1200,
+   "malformed": 2000
+  },
+  "A1": {
+   "caught": 500,
+   "planted": 500,
+   "rate": 1,
+   "perKind": {
+    "P1": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P2": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P3": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P4": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P5": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P6": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P7": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P8": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P9": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    },
+    "P10": {
+     "planted": 50,
+     "caught": 50,
+     "rate": 1,
+     "missed": []
+    }
+   }
+  },
+  "A2": {
+   "results": 5000,
+   "falseResults": 0,
+   "rate": 0,
+   "by": {}
+  },
+  "A3": {
+   "late": 250,
+   "failedP1": 250
+  },
+  "A4": {
+   "jobs": 1200,
+   "judgementFails": 0,
+   "queueExact": 1200,
+   "flags": 550
+  },
+  "A5": {
+   "malformed": 2000,
+   "threw": 0,
+   "failedP1": 791,
+   "cleanPass": 150,
+   "deterministicMalformed": 2000,
+   "deterministicJudged": 1200,
+   "judged": 1200
+  }
+ },
+ "verdicts": [
+  {
+   "id": "A1",
+   "kind": "prediction",
+   "claim": "Recall: on 500 jobs with one planted failure each (50 of each kind), the check for that kind catches it — flags or fails it with an evidence pointer to the planted event — in at least 95% of jobs overall and at least 90% of each kind.",
+   "held": true,
+   "measured": "caught 500 of 500 (100%); by kind: P1 50/50, P2 50/50, P3 50/50, P4 50/50, P5 50/50, P6 50/50, P7 50/50, P8 50/50, P9 50/50, P10 50/50"
+  },
+  {
+   "id": "A2",
+   "kind": "prediction",
+   "claim": "False flags: on 500 clean jobs, at most 2% of all check results (500 jobs times 10 checks) are a flag or a fail.",
+   "held": true,
+   "measured": "0 of 5000 results on clean jobs were a flag or a fail (0%)"
+  },
+  {
+   "id": "A3",
+   "kind": "property",
+   "claim": "Late intent is always detected: every job whose intent was recorded after its first model call fails P1 — every one of the 50 planted, and every one of 200 more made by moving a clean job's intent to after a randomly chosen model call.",
+   "held": true,
+   "measured": "250 of 250 jobs with late intent failed P1"
+  },
+  {
+   "id": "A4",
+   "kind": "property",
+   "claim": "Humans own the judgement calls: across all 1,250 jobs judged, no judgement item (P2, P4, P6, P9) is ever an automated fail, and every flag of any check appears in the job's review queue — the queue holds exactly the flagged checks.",
+   "held": true,
+   "measured": "1200 jobs judged (the seal says 1,250; the suite it seals makes 500 + 500 + 200 = 1,200): judgement items failed by automation in 0; review queue exactly the flags in 1200 (550 flags)"
+  },
+  {
+   "id": "A5",
+   "kind": "property",
+   "claim": "The judge is total and deterministic: the same record judged twice gives the same judgement byte for byte, and 2,000 malformed records (fields missing, wrong types, garbage) are each judged without throwing — as failed P1 at least — never as a clean pass.",
+   "held": false,
+   "measured": "2000 malformed records: threw 0, failed P1 791, judged a clean pass 150; the same judgement twice: 2000 of 2000 malformed, 1200 of 1200 others"
+  }
+ ],
+ "held": 4,
+ "failed": 1
+}
