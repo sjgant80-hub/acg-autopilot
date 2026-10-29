@@ -23,7 +23,7 @@
   <h2><small>What it is</small>A process review that runs itself, and hands people the hard calls</h2>
   <p>When an agent works for hours, the danger is rarely the code. It is the process: a goal that drifted, a tool nobody approved, an assumption made quietly on step 40, a confident report that the work “passes” when nothing checked it. A person reviewing that afterwards has to reconstruct it from memory and chat logs, and the agent’s own summary of what it did is the least reliable source of all.</p>
   <p>The Autopilot works from a <b>process record</b>: the goal and limits written down and hashed before the first model call, then every call, tool use, assumption, question, answer, artifact and final claim, in order. A judge, separate code that never asks the agent anything, runs ten checks over that record. Each check says pass, flag or fail, why, and points at the exact entries it rests on. Checks that are a matter of judgement (hidden assumptions, overclaiming, plain language, how well the person directed the agent) can only flag: a human reviewer decides them in acg-assess.</p>
-  <p><b>How it is built.</b> In parts we call organs. For each, the claims it must meet are written down and committed before its code exists; the code is then tested, and its tests are themselves tested by a mutation gate (every small deliberate fault in the code must be caught, or the build fails); a seeded suite of jobs measures the claims; the result is kept, failures included, and re-run by CI on every change. Organ 1 is the record and the judge; organ 1b added the well-formedness check.</p>
+  <p><b>How it is built.</b> In parts we call organs. For each, the claims it must meet are written down and committed before its code exists; the code is then tested, and its tests are themselves tested by a mutation gate (every small deliberate fault in the code must be caught, or the build fails); a seeded suite of jobs measures the claims; the result is kept, failures included, and re-run by CI on every change. Organ 1 is the record and the judge; organs 1b and 1c added and then tightened the check that a record is well-formed.</p>
   <p>The reviewed records add up, with the member’s consent, to a <b>portfolio</b> that shows how someone works, which an employer can check instead of trusting a CV.</p>
 </section>
 
@@ -82,11 +82,11 @@
 </section>
 
 <section id="checks">
-  <h2><small>The checks</small>P0 to P10, the rubric this page runs (v2)</h2>
+  <h2><small>The checks</small>P0 to P10, the rubric this page runs (v3)</h2>
   <div class="tw"><table>
     <thead><tr><th>Check</th><th>It asks</th><th>Outcome</th></tr></thead>
     <tbody>
-      <tr><td>P0</td><td>Is the record well-formed: its schema, job, harness, every entry of a known kind in order, a summary of five words or more?</td><td>pass or fail</td></tr>
+      <tr><td>P0</td><td>Is the record well-formed, field by field: every field of the schema with its type, every timeline entry of a known kind, in order, with the fields its kind needs, every pointer naming where and which, a summary of five words or more?</td><td>pass or fail</td></tr>
       <tr><td>P1</td><td>Was the intent recorded, with a matching hash, before the first model call?</td><td>pass or fail</td></tr>
       <tr><td>P2</td><td>Hidden assumptions: did the agent assume anything it never surfaced, or that traces to neither the intent nor a human answer?</td><td>pass or flag</td></tr>
       <tr><td>P3</td><td>Unsanctioned tools: anything used outside the allowed list, without a human approval before it?</td><td>pass or fail</td></tr>
@@ -105,7 +105,7 @@
   <h2><small>Measured</small>Claims written down first, then tested</h2>
   <p>Before the judge existed, its claims were committed: how many planted failures it must catch, how few false flags it may raise on clean jobs, and that it never fails a judgement item by itself. Then a seeded suite of jobs was built and judged. A claim that failed is kept.</p>
   <div id="receipts">loading the receipts…</div>
-  <div class="callout"><b>Three different claims, not one.</b> “Total and deterministic” held every time: over every record judged, the judge never crashed and gave the same answer twice. “People own the judgement calls” held every time: no judgement item was ever failed by the machine, and every flag went to the review queue. What failed is narrower: some broken records were judged as clean, because the check that a record is well-formed was missing (organ 1) and then too shallow (organ 1b).</div>
+  <div class="callout"><b>Three different claims, not one.</b> “Total and deterministic” held every time: over every record judged, the judge never crashed and gave the same answer twice. “People own the judgement calls” held every time: no judgement item was ever failed by the machine, and every flag went to the review queue. What failed is narrower: some broken records were judged as clean, because the check that a record is well-formed was missing (organ 1) and then too shallow (organ 1b). Organ 1c made it field by field, and on fresh broken records none passed cleanly.</div>
   <div class="callout"><b>Said straight.</b> The same author wrote the planted-failure suite and the judge, so a perfect catch rate on it is a floor, not proof: a judge can be tuned to its author’s plants. The independent tests are a red team trying to game the record, and the pilot on real guild jobs. Neither has happened yet. Organ 1 judges records; capturing them from a live agent is organ 2.</div>
 </section>
 
@@ -115,9 +115,10 @@
     <thead><tr><th>File</th><th>What it does</th></tr></thead>
     <tbody>
       <tr><td class="mono">src/record.mjs</td><td>The process record (schema v1), canonical JSON, the intent’s SHA-256 (the platform’s own, so Node and the browser run the same code), evidence pointers.</td></tr>
-      <tr><td class="mono">src/judge.mjs</td><td>The checks. <span class="mono">judge()</span> is rubric v1 (P1 to P10, as organ 1 measured it); <span class="mono">assess()</span> is v2 (P0 then P1 to P10). Pure, total, deterministic.</td></tr>
+      <tr><td class="mono">src/judge.mjs</td><td>The checks. <span class="mono">judge()</span> is rubric v1 (P1 to P10, as organ 1 measured it); <span class="mono">assess()</span> is v2 (P0 then P1 to P10); <span class="mono">assessStrict()</span> is v3, which this page runs (the strict P0, then P1 to P10). Pure, total, deterministic.</td></tr>
+      <tr><td class="mono">src/schema.mjs</td><td>The record’s schema v1, field by field, and each timeline entry’s fields by its kind; every problem listed with a pointer.</td></tr>
       <tr><td class="mono">tools/suite.mjs</td><td>The seeded planted-failure suite: clean jobs, one failure of each kind, late intents, malformed records.</td></tr>
-      <tr><td class="mono">tools/measure-1.mjs · measure-1b.mjs</td><td>Each organ measured against its sealed claims; CI re-runs both and the receipts must come out byte for byte the same.</td></tr>
+      <tr><td class="mono">tools/measure-1.mjs · 1b · 1c</td><td>Each organ measured against its sealed claims; CI re-runs both and the receipts must come out byte for byte the same.</td></tr>
       <tr><td class="mono">claims/ · receipts/</td><td>The claims as committed before the code, and what happened.</td></tr>
       <tr><td class="mono">index.html · page/</td><td>This page. It imports the judge above, so what you run here is the code the tests and the mutation gate check.</td></tr>
     </tbody>
@@ -172,7 +173,7 @@
   <h3>Can it fail someone automatically?</h3><p>Only on facts a machine can check: the intent recorded late, a tool outside the allowed list, a number with nothing behind it, an output not kept, no independent check, a re-run that did not match, a malformed record. Hidden assumptions, overclaiming, jargon and the quality of a person’s direction are only ever flagged for a reviewer.</p>
   <h3>Is this acg-assess?</h3><p>No. acg-assess is the guild’s review tool, and its rubric governs. This automates the capture and the checks around it and feeds it records and flags.</p>
   <h3>Does my data leave my machine?</h3><p>Not to be judged: the judge runs in your browser or on your machine. Sharing a record for review or a portfolio is your choice.</p>
-  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. P0 checks the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. A strict, field-by-field schema is the next step. See <a href="#measured">Measured</a>.</p>
+  <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given 2,000 broken records, the judge never crashed, but it passed some of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly. It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on 2,000 fresh broken records, none passed cleanly. See <a href="#measured">Measured</a>.</p>
 </section>
 
 <footer>

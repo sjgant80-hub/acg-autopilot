@@ -17,14 +17,15 @@ overclaiming, plain language, the person's direction) can only flag; every flag 
 node --test test/*.test.mjs           # the record and the judge
 node tools/measure-1.mjs --check      # organ 1 against its sealed claims, byte for byte
 node tools/measure-1b.mjs --check     # organ 1b (P0, well-formed)
+node tools/measure-1c.mjs --check     # organ 1c (the strict schema)
 ```
 
 The judge is pure JavaScript with no dependencies; it runs in Node 20+ and in the browser (the live page imports it).
 
 ```js
-import { assess } from './src/judge.mjs';
+import { assessStrict } from './src/judge.mjs';
 import { factsOf } from './src/record.mjs';
-const judgement = assess(record, await factsOf(record));   // { rubric, results: [P0..P10], review, counts }
+const judgement = assessStrict(record, await factsOf(record));   // { rubric, results: [P0..P10], review, counts }
 ```
 
 ## How it is built
@@ -34,10 +35,12 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 (witness): a test suite that lets a mutant live fails the build.
 
 - `src/record.mjs`: the process record (schema v1), canonical JSON, the intent hash, evidence pointers.
-- `src/judge.mjs`: `judge()` is rubric v1 (P1 to P10, as organ 1 measured it); `assess()` is rubric v2 (P0, then P1 to P10).
+- `src/judge.mjs`: `judge()` is rubric v1 (P1 to P10, as organ 1 measured it); `assess()` is rubric v2 (P0, then P1 to P10);
+  `assessStrict()` is rubric v3, the one to use (the strict P0 of `src/schema.mjs`, then P1 to P10).
+- `src/schema.mjs`: schema v1 field by field, each timeline entry's fields typed by its kind.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
 
-Organ 1 (the record and the judge) is built and measured. Capture from a live harness, the bridge to acg-assess and
+Organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the strict schema) are built and measured; 1c held 4 of 4. Capture from a live harness, the bridge to acg-assess and
 the member portfolio are the next organs. Honest scope: it measures process discipline and evidence, not whether the
 work is correct; the planted-failure suite and the judge share an author, so the independent tests are a red team and
 a pilot on real guild jobs, neither yet run.
