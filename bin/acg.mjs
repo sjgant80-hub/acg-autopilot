@@ -11,6 +11,11 @@
 //   acg bundle [--job ID]       the record and its log, signed by the recorder and the judge → jobs/<job>/bundle.json
 //   acg review --check P2 --decision upheld|overturned --note "…" [--job ID]   a reviewer's signed decision on a flag
 //   acg verify-bundle <bundle.json> [--trust trust.json]
+// Key care (organ 4): with a passphrase in $ACG_PASSPHRASE (or the variable --passphrase-env names), acg keys seals each
+// new key under it (<role>.key.json; no plain seed is written) and every command that signs opens it with that passphrase.
+//   acg keys --seal             seal the plain .seed files made earlier, same public keys, and remove the plain files
+//   acg revoke --key HEX --reason "…" [--trust trust.json]     a lost or stolen key: trusted for nothing from now on
+//   acg rotate --role recorder|judge|reviewer [--trust trust.json]   a new key for the role; the old one revoked as rotated
 // State lives in $ACG_HOME, or .acg in the current folder: jobs/<job>/{log.jsonl, head, intent.json, store/, record.json}.
 // The hook never blocks the harness and never prints: on any error it writes a line to errors.log and exits 0.
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, copyFileSync } from 'node:fs';
@@ -22,7 +27,9 @@ import { importTranscript } from '../src/transcript.mjs';
 import { intentHash, canonical, factsOf, KINDS } from '../src/record.mjs';
 import { assessStrict } from '../src/judge.mjs';
 import { signerFromSeed } from '../src/sign.mjs';
-import { makeBundle, verifyBundle } from '../src/bundle.mjs';
+import { makeBundle } from '../src/bundle.mjs';
+import { sealSeed, openSeed } from '../src/keystore.mjs';
+import { revoke as revokeKey, rotate as rotateKey, verifyTrusted } from '../src/trust.mjs';
 
 const HOME = resolve(process.env.ACG_HOME || join(process.cwd(), '.acg'));
 const EVENTS = ['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionStart'];
@@ -131,25 +138,72 @@ async function recordOf(job) {
 }
 const KEYS = join(HOME, 'keys'), ROLES = ['recorder', 'judge', 'reviewer'];
 const hexOf = (u8) => [...u8].map((b) => b.toString(16).padStart(2, '0')).join('');
-async function signer(role) { const p = join(KEYS, role + '.seed'); if (!existsSync(p)) return null; return signerFromSeed(Uint8Array.from(readFileSync(p, 'utf8').trim().match(/../g), (b) => parseInt(b, 16))); }
-async function keys() {
+const plainOf = (role) => join(KEYS, role + '.seed'), sealedOf = (role) => join(KEYS, role + '.key.json');
+const seedOfHex = (h) => Uint8Array.from(h.trim().match(/../g), (b) => parseInt(b, 16));
+const passphraseOf = (o) => process.env[typeof o['passphrase-env'] === 'string' ? o['passphrase-env'] : 'ACG_PASSPHRASE'] || null;
+/** the role's signer: a sealed key opened with the passphrase, else a plain seed made before organ 4, else null */
+async function signer(role, o = {}) {
+  if (existsSync(sealedOf(role))) {
+    const pass = passphraseOf(o);
+    if (!pass) throw new Error('the ' + role + ' key is sealed: give its passphrase in ACG_PASSPHRASE (or name the variable with --passphrase-env)');
+    const r = await openSeed(JSON.parse(readFileSync(sealedOf(role), 'utf8')), pass);
+    if (!r.ok) throw new Error('the ' + role + ' key: ' + r.why);
+    return signerFromSeed(r.seed);
+  }
+  return existsSync(plainOf(role)) ? signerFromSeed(seedOfHex(readFileSync(plainOf(role), 'utf8'))) : null;
+}
+async function writeKey(role, seed, pass) {
+  if (pass) writeFileSync(sealedOf(role), JSON.stringify(await sealSeed(seed, pass, { role }), null, 1) + '\n', { mode: 0o600 });
+  else writeFileSync(plainOf(role), hexOf(seed) + '\n', { mode: 0o600 });
+}
+const trustPath = (o) => (typeof o.trust === 'string' ? o.trust : join(KEYS, 'trust.json'));
+const readTrust = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {});
+async function keys(o) {
   mkdirSync(KEYS, { recursive: true });
-  const trust = { recorders: [], judges: [], reviewers: [] };
+  const pass = passphraseOf(o), prior = readTrust(join(KEYS, 'trust.json')), revoked = Array.isArray(prior.revoked) ? prior.revoked : [];
+  const trust = { recorders: [], judges: [], reviewers: [], revoked };
+  const pubs = {};
   for (const role of ROLES) {
-    const p = join(KEYS, role + '.seed');
-    if (!existsSync(p)) writeFileSync(p, hexOf(globalThis.crypto.getRandomValues(new Uint8Array(32))) + '\n', { mode: 0o600 });
-    trust[role + 's'].push((await signer(role)).publicHex);
+    if (!existsSync(sealedOf(role)) && !existsSync(plainOf(role))) await writeKey(role, globalThis.crypto.getRandomValues(new Uint8Array(32)), pass);
+    else if (o.seal === true && existsSync(plainOf(role)) && !existsSync(sealedOf(role))) {
+      if (!pass) throw new Error('acg keys --seal needs the passphrase in ACG_PASSPHRASE (or --passphrase-env)');
+      const seed = seedOfHex(readFileSync(plainOf(role), 'utf8')), before = (await signerFromSeed(seed)).publicHex;
+      await writeKey(role, seed, pass);
+      if ((await signer(role, o)).publicHex !== before) { rmSync(sealedOf(role)); throw new Error('the sealed ' + role + ' key did not open to the same key; the plain seed is kept'); }
+      rmSync(plainOf(role));
+    }
+    const pub = (pubs[role] = (await signer(role, o)).publicHex), was = Array.isArray(prior[role + 's']) ? prior[role + 's'] : [];
+    trust[role + 's'] = [...new Set([...was, pub])].filter((k) => !revoked.some((r) => r && r.key === k));
   }
   writeFileSync(join(KEYS, 'trust.json'), JSON.stringify(trust, null, 1) + '\n');
-  return 'keys in ' + KEYS + ' (the .seed files are private: never share them)\npublic: ' + ROLES.map((r) => r + ' ' + trust[r + 's'][0].slice(0, 16) + '…').join(', ') + '\ntrust list: ' + join(KEYS, 'trust.json');
+  const plain = ROLES.filter((r) => existsSync(plainOf(r)));
+  return 'keys in ' + KEYS + (plain.length ? ' (the .seed files are private: never share them' + (pass ? '' : '; set ACG_PASSPHRASE and run acg keys --seal to seal them') + ')' : ' (sealed under your passphrase: the .key.json files do not open without it)')
+    + '\npublic: ' + ROLES.map((r) => r + ' ' + pubs[r].slice(0, 16) + '…' + (trust[r + 's'].includes(pubs[r]) ? '' : ' (REVOKED: run acg rotate --role ' + r + ')')).join(', ') + '\ntrust list: ' + join(KEYS, 'trust.json');
+}
+async function revoke(o) {
+  const p = trustPath(o), t = revokeKey(readTrust(p), o.key, typeof o.reason === 'string' ? o.reason : '', now());
+  writeFileSync(p, JSON.stringify(t, null, 1) + '\n');
+  return 'revoked ' + String(o.key).slice(0, 16) + '… in ' + p + ': every bundle it signed is refused from now on';
+}
+async function rotate(o) {
+  const role = o.role;
+  if (!ROLES.includes(role)) throw new Error('acg rotate --role recorder|judge|reviewer');
+  const old = await signer(role, o);
+  if (!old) throw new Error('no ' + role + ' key to rotate: run acg keys first');
+  const pass = passphraseOf(o);
+  for (const f of [plainOf(role), sealedOf(role)]) if (existsSync(f)) rmSync(f);
+  await writeKey(role, globalThis.crypto.getRandomValues(new Uint8Array(32)), pass);
+  const fresh = await signer(role, o), p = trustPath(o);
+  writeFileSync(p, JSON.stringify(rotateKey(readTrust(p), role + 's', old.publicHex, fresh.publicHex, now()), null, 1) + '\n');
+  return 'rotated the ' + role + ' key: ' + fresh.publicHex.slice(0, 16) + '… trusted, ' + old.publicHex.slice(0, 16) + '… revoked in ' + p;
 }
 async function bundle(o) {
-  const job = currentJob(o), l = linesOf(job), r = await recordOf(job), b = await makeBundle({ record: r, log: l.lines, recorder: await signer('recorder'), judge: await signer('judge') });
+  const job = currentJob(o), l = linesOf(job), r = await recordOf(job), b = await makeBundle({ record: r, log: l.lines, recorder: await signer('recorder', o), judge: await signer('judge', o) });
   if (!b.recorded) throw new Error('no recorder key: run acg keys first');
   const p = join(jobDir(job), 'bundle.json'); writeFileSync(p, JSON.stringify(b, null, 1) + '\n'); return p;
 }
 async function review(o) {
-  const job = currentJob(o), p = join(jobDir(job), 'bundle.json'), rv = await signer('reviewer');
+  const job = currentJob(o), p = join(jobDir(job), 'bundle.json'), rv = await signer('reviewer', o);
   if (!existsSync(p) || !rv) throw new Error('acg review needs a bundle (acg bundle) and a reviewer key (acg keys)');
   if (typeof o.check !== 'string' || !['upheld', 'overturned'].includes(o.decision) || typeof o.note !== 'string') throw new Error('acg review --check P2 --decision upheld|overturned --note "why"');
   const b = JSON.parse(readFileSync(p, 'utf8')), decisions = [...((b.reviewed && b.reviewed.payload && b.reviewed.payload.decisions) || []).filter((d) => d.check !== o.check), { check: o.check, decision: o.decision, note: o.note }];
@@ -168,13 +222,15 @@ async function main() {
   if (cmd === 'log') { const job = currentJob(o); const r = await recordOf(job); return console.log(r.timeline.map((e) => e.seq + '  ' + e.kind + (e.tool ? ' ' + e.tool : '') + (e.text ? ' · ' + e.text : '')).join('\n') || '(empty)'); }
   if (cmd === 'verify') { const v = await verifyLog(linesOf(currentJob(o)).lines || []); return console.log(v.ok ? 'the log verifies: ' + v.length + ' lines' : 'BROKEN: ' + v.why); }
   if (cmd === 'record') { const job = currentJob(o), r = await recordOf(job), p = join(jobDir(job), 'record.json'); writeFileSync(p, JSON.stringify(r, null, 1) + '\n'); return console.log(p); }
-  if (cmd === 'keys') return console.log(await keys());
+  if (cmd === 'keys') return console.log(await keys(o));
+  if (cmd === 'revoke') return console.log(await revoke(o));
+  if (cmd === 'rotate') return console.log(await rotate(o));
   if (cmd === 'bundle') return console.log(await bundle(o));
   if (cmd === 'review') return console.log(await review(o));
-  if (cmd === 'verify-bundle') { const b = JSON.parse(readFileSync(o._[1], 'utf8')), tp = typeof o.trust === 'string' ? o.trust : join(KEYS, 'trust.json'); const v = await verifyBundle(b, JSON.parse(readFileSync(tp, 'utf8'))); console.log(v.ok ? 'the bundle verifies' : 'REFUSED:\n  ' + v.problems.join('\n  ')); process.exitCode = v.ok ? 0 : 2; return; }
+  if (cmd === 'verify-bundle') { const b = JSON.parse(readFileSync(o._[1], 'utf8')), v = await verifyTrusted(b, JSON.parse(readFileSync(trustPath(o), 'utf8'))); console.log(v.ok ? 'the bundle verifies' : 'REFUSED:\n  ' + v.problems.join('\n  ')); process.exitCode = v.ok ? 0 : 2; return; }
   if (cmd === 'judge') { const r = o._[1] ? JSON.parse(readFileSync(o._[1], 'utf8')) : await recordOf(currentJob(o)); return console.log(show(assessStrict(r, await factsOf(r)))); }
   if (cmd === 'import') { const { record, counts } = await importTranscript(readFileSync(o._[1], 'utf8')); const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
-  console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle — see the top of bin/acg.mjs');
+  console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle | revoke | rotate — see the top of bin/acg.mjs');
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]).replace(/\\/g, '/').endsWith('bin/acg.mjs');
