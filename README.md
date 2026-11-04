@@ -3,7 +3,9 @@
 **Live page: https://sjgant80-hub.github.io/acg-autopilot/** (judge a process record in your browser)
 
 Automated process review for agentic work, built to feed the AI Craftspeople Guild's process-review tool,
-acg-assess (Alex's design; its rubric governs, and the checks here are a proposal to align with it).
+acg-assess (Alex's design; its rubric governs, and the checks here are a proposal to align with it). Any team that runs
+AI agents can use it on its own work: the live page carries the case for a business, with a cost case worked out from
+sourced figures and the reader's own numbers.
 
 An agent did a job. This checks **how** it was done: was the intent written down and hashed before the first model
 call, were only allowed tools used, were assumptions surfaced, are the final claims backed by evidence, did anything
@@ -18,7 +20,12 @@ node --test test/*.test.mjs           # the record and the judge
 node tools/measure-1.mjs --check      # organ 1 against its sealed claims, byte for byte
 node tools/measure-1b.mjs --check     # organ 1b (P0, well-formed)
 node tools/measure-1c.mjs --check     # organ 1c (the strict schema)
+node tools/measure-3.mjs --check      # organ 3 (signed records; F5 needs the real transcripts and is local)
+node tools/measure-3b.mjs --check     # organ 3b (a false judgement refused)
 ```
+
+CI also runs witness, the mutation gate, on every kernel in `src/`, and checks the run against `receipts/gate.json`
+(the numbers the page's blueprint shows).
 
 The judge is pure JavaScript with no dependencies; it runs in Node 20+ and in the browser (the live page imports it).
 
@@ -71,11 +78,19 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 - `src/judge.mjs`: `judge()` is rubric v1 (P1 to P10, as organ 1 measured it); `assess()` is rubric v2 (P0, then P1 to P10);
   `assessStrict()` is rubric v3, the one to use (the strict P0 of `src/schema.mjs`, then P1 to P10).
 - `src/schema.mjs`: schema v1 field by field, each timeline entry's fields typed by its kind.
+- `src/log.mjs`, `src/normalise.mjs`, `src/transcript.mjs`, `bin/acg.mjs`: capture (organ 2): the hash-chained log, the
+  record from the log, a past transcript imported, the command line and the hook.
+- `src/sign.mjs`, `src/bundle.mjs`: signed records (organ 3).
+- `src/reviewcase.mjs`, `data/basis.json`: the page's cost case, every external figure from the sourced basis.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
+- `tools/gate.mjs`, `receipts/gate.json`: the gate's own receipt, checked by CI.
 
-Organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the strict schema) are built and measured; 1c held 4 of 4; capture from Claude Code (organ 2, 6 of 7) and signed records (organ 3, 4 of 5, then 3b 1 of 1) too. The bridge to acg-assess and
-the member portfolio are next. Honest scope: it measures process discipline and evidence, not whether the
-work is correct; the planted-failure suite and the judge share an author, so the independent tests are a red team and
-a pilot on real guild jobs, neither yet run.
+Built and measured: organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the
+strict schema), capture from Claude Code (organ 2) and signed records (organ 3, then 3b); the receipts hold every result,
+failures included. Waiting: the bridge into acg-assess (it needs acg-assess's record format), and the member portfolio
+after it. Honest scope: it measures process discipline and evidence, not whether the work is correct; the
+planted-failure suite and the judge share an author, so the independent tests are a red team and a pilot on real guild
+jobs, neither yet run.
 
-MIT. Supplier and support: AI Native Solutions.
+MIT. Supplied by AI Native Solutions (https://www.ai-nativesolutions.com); support, service levels, warranty and liability
+are agreed per deployment, and it keeps running without us. Powered by the Konomi architecture, created by Thomas Frumkin.

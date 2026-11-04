@@ -25,3 +25,10 @@ textarea{width:100%;min-height:150px;font-family:var(--mono);font-size:12px;back
 footer{border-top:1px solid var(--line);margin-top:36px;padding-top:14px;font-size:13px;color:var(--dim)}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font-size:12px}
 select{max-width:100%;min-width:0}
+.diagram rect.wait{stroke-dasharray:6 5}.diagram svg{max-height:none}
+.inputs{display:grid;gap:10px;grid-template-columns:1fr}@media(min-width:640px){.inputs{grid-template-columns:1fr 1fr 1fr}}
+.inputs label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--dim)}
+input{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 10px;width:100%;min-width:0}
+input:focus,button:focus,select:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:1px}
+table.bp tr.organ td{color:var(--accent);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-top:16px}
+.trace li{overflow-wrap:anywhere}

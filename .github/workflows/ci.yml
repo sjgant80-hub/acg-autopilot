@@ -3,32 +3,53 @@ on: [push, pull_request]
 jobs:
   prove:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash                               # bash -eo pipefail: a failing command before a pipe fails the step
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }                  # the measurement finds the commit that sealed its claims
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      - name: the record and the judge - unit, edge and garbage suites, and the live page's own checks
-        run: node --test test/*.test.mjs
-      - name: the judge's mutation gate - every mutant of src/judge.mjs and src/record.mjs must be killed by the tests
+      - name: the record and the judge - unit, edge and garbage suites, the cost case, and the live page's own checks
+        run: |
+          node --test test/*.test.mjs | tee /tmp/t.txt
+          node tools/gate.mjs tests /tmp/t.txt /tmp/gate-run.json
+      - name: the judge's mutation gate - every mutant of src/judge.mjs, src/record.mjs and src/schema.mjs must be killed by the tests
         run: |
           git clone --depth 1 --branch v0.6 https://github.com/sjgant80-hub/witness.git /tmp/witness6
+          T="test/judge.test.mjs test/wellformed.test.mjs test/schema.test.mjs"
           for k in src/judge.mjs src/record.mjs src/schema.mjs; do
-            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test test/judge.test.mjs test/wellformed.test.mjs test/schema.test.mjs | tee /tmp/w.txt
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test $T | tee /tmp/w.txt
             grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
+            node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
           done
       - name: organ 2's mutation gate - the log, the normaliser and the importer, under the capture tests (the recorder end to end in a temp folder)
         run: |
+          T="test/capture.test.mjs"
           for k in src/log.mjs src/normalise.mjs src/transcript.mjs; do
-            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 900 --test node --test test/capture.test.mjs | tee /tmp/w.txt
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 900 --test node --test $T | tee /tmp/w.txt
             grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
+            node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
           done
       - name: organ 3's mutation gate - signatures and bundles
         run: |
+          T="test/sign.test.mjs"
           for k in src/sign.mjs src/bundle.mjs; do
-            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 900 --test node --test test/sign.test.mjs | tee /tmp/w.txt
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 900 --test node --test $T | tee /tmp/w.txt
             grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
+            node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
           done
+      - name: the cost case's mutation gate - the brochure's numbers
+        run: |
+          T="test/reviewcase.test.mjs"
+          for k in src/reviewcase.mjs; do
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test $T | tee /tmp/w.txt
+            grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
+            node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
+          done
+      - name: the gate's receipt - this run must be exactly receipts/gate.json, which the live page shows
+        run: node tools/gate.mjs check /tmp/gate-run.json
       - name: organ 1 - the planted-failure suite judged again; the receipt must come out byte for byte the same
         run: node tools/measure-1.mjs --check
       - name: organ 1b - P0 (well-formed) over fresh malformed records and organ 1's jobs; the receipt must come out byte for byte the same

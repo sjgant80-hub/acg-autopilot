@@ -1,0 +1,65 @@
+{
+ "kind": "acg-autopilot.gate",
+ "witness": "v0.6",
+ "about": "What CI ran on GitHub's runner: the tests, and witness (the mutation gate) on every kernel. tools/gate.mjs checks each run against this file; a kernel that changes changes its mutants, and this receipt with it.",
+ "tests": {
+  "count": 49,
+  "passed": 49
+ },
+ "kernels": [
+  {
+   "file": "src/judge.mjs",
+   "tests": "test/judge.test.mjs test/wellformed.test.mjs test/schema.test.mjs",
+   "total": 120,
+   "killed": 120
+  },
+  {
+   "file": "src/record.mjs",
+   "tests": "test/judge.test.mjs test/wellformed.test.mjs test/schema.test.mjs",
+   "total": 37,
+   "killed": 37
+  },
+  {
+   "file": "src/schema.mjs",
+   "tests": "test/judge.test.mjs test/wellformed.test.mjs test/schema.test.mjs",
+   "total": 56,
+   "killed": 56
+  },
+  {
+   "file": "src/log.mjs",
+   "tests": "test/capture.test.mjs",
+   "total": 11,
+   "killed": 11
+  },
+  {
+   "file": "src/normalise.mjs",
+   "tests": "test/capture.test.mjs",
+   "total": 24,
+   "killed": 24
+  },
+  {
+   "file": "src/transcript.mjs",
+   "tests": "test/capture.test.mjs",
+   "total": 28,
+   "killed": 28
+  },
+  {
+   "file": "src/sign.mjs",
+   "tests": "test/sign.test.mjs",
+   "total": 17,
+   "killed": 17
+  },
+  {
+   "file": "src/bundle.mjs",
+   "tests": "test/sign.test.mjs",
+   "total": 28,
+   "killed": 28
+  },
+  {
+   "file": "src/reviewcase.mjs",
+   "tests": "test/reviewcase.test.mjs",
+   "total": 21,
+   "killed": 21
+  }
+ ]
+}
