@@ -1,0 +1,91 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": 4,
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-4.json",
+  "commit": "fe6ca9e6a179f403e86de3802fb524b4cc6d9917",
+  "claimsSha256": "271b9f41c5ff8c486422e6d1de49eddd49effbdf54423585157b7c6c2c03b3e5"
+ },
+ "demoSeeds": "K3 and K4 use public demonstration keys, never real ones; K1 and K2 use fresh random seeds, never written down",
+ "facts": {
+  "K1": {
+   "keys": 50,
+   "iterations": 600000,
+   "formsChecked": 300,
+   "hits": 0,
+   "atDefault": 50
+  },
+  "K2": {
+   "opened": 50,
+   "wrongTried": 150,
+   "wrongRefused": 150,
+   "resealedOpened": 5,
+   "tamperTried": 395,
+   "tamperRefused": 395,
+   "threw": 0
+  },
+  "K3": {
+   "bundles": 1000,
+   "verified": 1000,
+   "recorderRevokedRefused": 1000,
+   "judgeRevokedRefused": 1000,
+   "withReview": 1000,
+   "reviewerRevokedRefused": 1000,
+   "unrelatedVerified": 1000
+  },
+  "K4": {
+   "jobs": 100,
+   "newVerified": 100,
+   "oldRefused": 100
+  },
+  "K5": {
+   "plainSeedFiles": 0,
+   "seedFormHits": 0,
+   "rightBundleVerified": true,
+   "wrongRefusedNoBundle": true,
+   "missingRefusedNoBundle": true,
+   "sealedSamePublic": true,
+   "plainLeftAfterSeal": 0
+  }
+ },
+ "verdicts": [
+  {
+   "id": "K1",
+   "kind": "property",
+   "claim": "A sealed key holds no seed: for each of the 50 keys sealed at the default strength, no form of its seed (the raw bytes as text, hex, base64, base64url, or the PKCS#8 key in hex or base64) appears in the sealed file, and the file records 600,000 or more iterations.",
+   "held": true,
+   "measured": "50 keys sealed at the default strength (50 record 600,000 or more iterations); seed forms looked for: 300, found: 0"
+  },
+  {
+   "id": "K2",
+   "kind": "property",
+   "claim": "Only the passphrase opens it: each of the 50 opens with its passphrase to a signer with the same public key as its seed; each of 3 wrong passphrases a key (150 tries) is refused; and on the 5 re-sealed keys, every one-byte change to the salt, the nonce or the sealed seed, the iteration count one up or one down, and a changed kind, is refused. None throws.",
+   "held": true,
+   "measured": "50 of 50 opened with their passphrase to the same public key; 150 of 150 wrong passphrases refused; 5 of 5 re-sealed keys opened, then 395 of 395 one-byte, stretch and kind changes refused; threw: 0"
+  },
+  {
+   "id": "K3",
+   "kind": "property",
+   "claim": "A revoked key cannot sign: over organ 3's 1,000 bundles, with nothing revoked every one verifies; with the recorder's key revoked, every one is refused and the refusal names the revocation; likewise with the judge's key revoked; with the reviewer's key revoked, every bundle carrying a review is refused; and revoking a key that signed none of them changes nothing.",
+   "held": true,
+   "measured": "of 1000 bundles: 1000 verified with nothing revoked; refused as revoked: 1000 with the recorder’s key revoked, 1000 with the judge’s, 1000 of the 1000 carrying a review with the reviewer’s; 1000 verified with an unrelated key revoked"
+  },
+  {
+   "id": "K4",
+   "kind": "property",
+   "claim": "Rotation cuts off the old key: for 100 of the 1,000 jobs, after the recorder's key is rotated, a bundle signed with the new key verifies under the rotated trust list, and a bundle signed afresh with the old key, as a thief holding its seed would, is refused as revoked.",
+   "held": true,
+   "measured": "after rotating the recorder’s key, of 100 jobs: 100 signed with the new key verified; 100 signed afresh with the old key refused as revoked"
+  },
+  {
+   "id": "K5",
+   "kind": "property",
+   "claim": "The command line keeps no plain seed once a passphrase is given: acg keys with a passphrase writes no .seed file and no form of any seed anywhere under its folder; acg bundle with the right passphrase writes a bundle that verifies; with a wrong or missing passphrase it refuses, says why, and writes no bundle; and acg keys --seal turns plain seeds made earlier into sealed ones with the same public keys, leaving no plain seed behind.",
+   "held": true,
+   "measured": "with a passphrase: plain seed files 0, seed forms anywhere under the folder 0; the right passphrase signed a bundle that verifies: yes; a wrong one refused with no bundle: yes; none refused with no bundle: yes; --seal kept the public keys: yes, plain seeds left: 0"
+  }
+ ],
+ "held": 5,
+ "failed": 0
+}

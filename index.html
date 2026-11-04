@@ -23,7 +23,7 @@
   <h2><small>What it is</small>A process review that runs itself, and hands people the hard calls</h2>
   <p>When an agent works for hours, the danger is rarely the code. It is the process: a goal that drifted, a tool nobody approved, an assumption made quietly halfway through, a confident report that the work “passes” when nothing checked it. A person reviewing that afterwards has to reconstruct it from memory and chat logs, and the agent’s own summary of what it did is the least reliable source of all.</p>
   <p>The Autopilot works from a <b>process record</b>: the goal and limits written down and hashed before the first model call, then every call, tool use, assumption, question, answer, artifact and final claim, in order. A judge, separate code that never asks the agent anything, runs eleven checks over that record (P0 to P10). Each check says pass, flag or fail, why, and points at the exact entries it rests on. Checks that are a matter of judgement (hidden assumptions, overclaiming, plain language, how well the person directed the agent) can only flag: a person decides them.</p>
-  <p>It has three working parts today. A <b>recorder</b> on Claude Code’s own hooks writes the record as the job runs. The <b>judge</b> checks it. And a <b>signed bundle</b> carries the record, its log and the signatures of whoever recorded, judged and reviewed it, so anyone can check that nothing was changed, cut short or dressed up afterwards.</p>
+  <p>It has four working parts today. A <b>recorder</b> on Claude Code’s own hooks writes the record as the job runs. The <b>judge</b> checks it. And a <b>signed bundle</b> carries the record, its log and the signatures of whoever recorded, judged and reviewed it, so anyone can check that nothing was changed, cut short or dressed up afterwards. And <b>key care</b> keeps those keys sealed under a passphrase and lets a lost one be revoked.</p>
   <p><b>How it is built.</b> In parts we call organs. For each, the claims it must meet are written down and committed before its code exists; the code is then tested, and its tests are themselves tested by a mutation gate (every small deliberate fault in the code must be caught, or the build fails); a seeded suite of jobs measures the claims; the result is kept, failures included, and re-run by CI on every change.</p>
   <p>The reviewed records add up, with the member’s consent, to a <b>portfolio</b> that shows how someone works, which an employer can check instead of trusting a CV.</p>
 </section>
@@ -91,8 +91,16 @@
   <h3>What a signature proves, and what it does not</h3>
   <ul>
     <li><b>It proves</b> that whoever holds a trusted key signed exactly this record, this log’s end and this judgement, and that nothing has been changed, cut or rewritten since. Measured on <span data-r="3:facts.bundles">…</span> signed jobs (<span data-r="3:facts.F1.tried">…</span> attacks on their logs, every one refused) and on <span data-r="3:facts.F5.logs">…</span> real ones (<span data-r="3:facts.F5.caught">…</span> of <span data-r="3:facts.F5.tried">…</span> attacks refused).</li>
-    <li id="keycare"><b>It does not prove</b> the key was not stolen. Keys are kept today as plain files in each machine’s <span class="mono">.acg/keys</span> folder: no passphrase, no hardware key, no rotation or revocation yet. Someone who copies a seed can sign as that party, until the key is taken off the trust list.</li>
+    <li><b>It does not prove</b> the key was not stolen. That is what key care is for, below: a key sealed under a passphrase is useless to someone who copies the file, and a lost or stolen key can be revoked, so everything it signs is refused.</li>
     <li><b>It does not prove the work was good.</b> It proves the record of how it was done is the one that was signed.</li>
+  </ul>
+  <h3 id="keycare">Key care: sealed keys, revocation, rotation (organ 4)</h3>
+  <p>With a passphrase in the <span class="mono">ACG_PASSPHRASE</span> environment variable, <span class="mono">acg keys</span> seals each new key: the passphrase is stretched (PBKDF2-SHA-256, <span data-r="4:facts.K1.iterations">…</span> rounds by default) into an AES-256-GCM key that encrypts the seed, with a fresh random salt and nonce. No plain seed is written, and every command that signs opens the key with the passphrase or refuses. <span class="mono">acg keys --seal</span> seals keys made earlier as plain files, keeping their public keys. The passphrase comes from the environment, so it never sits in the shell’s history.</p>
+  <ul>
+    <li><b>Revoke</b> a lost or stolen key: <span class="mono">acg revoke --key … --reason "stolen laptop"</span>. The trust list keeps the key, the reason and the date; every bundle that key signed is then refused, saying it was revoked and why.</li>
+    <li><b>Rotate</b> a role: <span class="mono">acg rotate --role recorder</span> makes a new key for it and revokes the old one as rotated. A thief holding the old seed can still sign, and every such signature is refused.</li>
+    <li><b>Measured:</b> <span data-r="4:facts.K1.keys">…</span> keys sealed with no form of their seed in the file; <span data-r="4:facts.K2.wrongRefused">…</span> of <span data-r="4:facts.K2.wrongTried">…</span> wrong passphrases and <span data-r="4:facts.K2.tamperRefused">…</span> of <span data-r="4:facts.K2.tamperTried">…</span> changed files refused; over <span data-r="4:facts.K3.bundles">…</span> signed bundles, every one refused once its recorder’s key (<span data-r="4:facts.K3.recorderRevokedRefused">…</span>), judge’s key (<span data-r="4:facts.K3.judgeRevokedRefused">…</span>) or reviewer’s key (<span data-r="4:facts.K3.reviewerRevokedRefused">…</span>) was revoked.</li>
+    <li><b>What it still does not do.</b> It protects a key at rest, not while someone who knows the passphrase is using it. It cannot use a hardware key: the platform’s WebCrypto cannot reach one. A revocation works wherever that trust list is used, so share the updated list. And a bundle signed before its key was revoked is refused too, because a signature carries no time a thief could not also write: sign such a record again with a key still trusted.</li>
   </ul>
   <div class="panel">
     <h3>Try it: sign a sample, then tamper with it</h3>
@@ -115,7 +123,7 @@
     <div class="diagram">
       <svg viewBox="0 0 420 690" role="img" aria-labelledby="dg-t dg-d">
         <title id="dg-t">The flow, as the code runs it</title>
-        <desc id="dg-d">One: acg seal hashes the intent before work. Two: the hook appends every prompt, tool use and file to a hash-chained log. Three: the normaliser turns the log into the process record. Four: the judge runs P0 to P10. Five: flags go to the review queue and a person decides. Six: the recorder, judge and reviewer sign the bundle. Seven: anyone with the trust list verifies it. Eight: the bridge into acg-assess waits on its record format. Nine: the member portfolio comes after the bridge. Stages one to seven are built and measured.</desc>
+        <desc id="dg-d">One: acg seal hashes the intent before work. Two: the hook appends every prompt, tool use and file to a hash-chained log. Three: the normaliser turns the log into the process record. Four: the judge runs P0 to P10. Five: flags go to the review queue and a person decides. Six: the recorder, judge and reviewer sign the bundle, with keys sealed under a passphrase. Seven: anyone with the trust list verifies it, refusing revoked keys. Eight: the bridge into acg-assess waits on its record format. Nine: the member portfolio comes after the bridge. Stages one to seven are built and measured.</desc>
         <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="arrow"/></marker></defs>
         <rect x="10" y="10" width="400" height="58" rx="8" class="on"/><text x="24" y="34">1 · seal the intent</text><text x="24" y="54" class="d">acg seal: goal, limits, tools; hashed before work</text>
         <path d="M210 68 V84" marker-end="url(#ar)"/>
@@ -127,9 +135,9 @@
         <path d="M210 296 V312" marker-end="url(#ar)"/>
         <rect x="10" y="314" width="400" height="58" rx="8" class="on"/><text x="24" y="338">5 · a person decides the flags</text><text x="24" y="358" class="d">the review queue holds exactly the flagged checks</text>
         <path d="M210 372 V388" marker-end="url(#ar)"/>
-        <rect x="10" y="390" width="400" height="58" rx="8" class="on"/><text x="24" y="414">6 · sign the bundle</text><text x="24" y="434" class="d">recorder, judge, reviewer: Ed25519</text>
+        <rect x="10" y="390" width="400" height="58" rx="8" class="on"/><text x="24" y="414">6 · sign the bundle</text><text x="24" y="434" class="d">recorder, judge, reviewer: Ed25519, keys sealed</text>
         <path d="M210 448 V464" marker-end="url(#ar)"/>
-        <rect x="10" y="466" width="400" height="58" rx="8" class="on"/><text x="24" y="490">7 · anyone verifies</text><text x="24" y="510" class="d">trust list, log end, judgement re-run byte for byte</text>
+        <rect x="10" y="466" width="400" height="58" rx="8" class="on"/><text x="24" y="490">7 · anyone verifies</text><text x="24" y="510" class="d">trust list and revocations, log end, judgement re-run</text>
         <path d="M210 524 V540" marker-end="url(#ar)"/>
         <rect x="10" y="542" width="400" height="58" rx="8" class="wait"/><text x="24" y="566">8 · into acg-assess</text><text x="24" y="586" class="d">waits on acg-assess’s record format</text>
         <path d="M210 600 V616" marker-end="url(#ar)"/>
@@ -204,6 +212,11 @@
       <tr><td class="mono">src/sign.mjs</td><td>Ed25519 through the platform’s WebCrypto (Node and the browser alike); a signature names its purpose; the private key is never exportable.</td><td class="mono">test/sign.test.mjs</td><td data-gate="src/sign.mjs">…</td></tr>
       <tr><td class="mono">src/bundle.mjs</td><td>The bundle, its three signatures, and everything checking one checks.</td><td class="mono">test/sign.test.mjs</td><td data-gate="src/bundle.mjs">…</td></tr>
       <tr><td class="mono">tools/measure-3.mjs · 3b</td><td><span data-r="3:facts.bundles">…</span> signed bundles attacked; the real-log part is local.</td><td>CI re-runs both</td><td>measurement</td></tr>
+      <tr class="organ"><td colspan="4">Organ 4 · key care</td></tr>
+      <tr><td class="mono">src/keystore.mjs</td><td>A seed sealed under a passphrase (PBKDF2-SHA-256 into AES-256-GCM, WebCrypto); opening one with a wrong passphrase or from a changed file is refused with its reason.</td><td class="mono">test/keys.test.mjs</td><td data-gate="src/keystore.mjs">…</td></tr>
+      <tr><td class="mono">src/trust.mjs</td><td>A trust list that revokes: the keys it still trusts, revoke, rotate, and checking a bundle so a revoked signer is named as revoked.</td><td class="mono">test/keys.test.mjs</td><td data-gate="src/trust.mjs">…</td></tr>
+      <tr><td class="mono">bin/acg.mjs: keys · revoke · rotate</td><td>Sealed keys from the command line, signing only with the passphrase, sealing old plain keys.</td><td>end to end in temporary folders, in test/keys-cli.test.mjs</td><td>tested, not mutation-gated (a command line)</td></tr>
+      <tr><td class="mono">tools/measure-4.mjs</td><td>Sealed keys, wrong passphrases and changed files, revocation and rotation over <span data-r="4:facts.K3.bundles">…</span> signed bundles, the command line.</td><td>CI re-runs it</td><td>measurement</td></tr>
       <tr class="organ"><td colspan="4">The cost case and the page</td></tr>
       <tr><td class="mono">src/reviewcase.mjs · data/basis.json</td><td>The cost case below: every external figure read from the sourced basis, the inputs the reader’s own.</td><td class="mono">test/reviewcase.test.mjs</td><td data-gate="src/reviewcase.mjs">…</td></tr>
       <tr><td class="mono">index.html · page/</td><td>This page. It imports the kernels above, so what you run here is the code the tests and the mutation gate check.</td><td class="mono">test/page.test.mjs</td><td>tested: its security policy, every control wired, every link resolves, every number bound to a receipt</td></tr>
@@ -233,6 +246,7 @@
     <li><b>Align the rubric with acg-assess.</b> Map P0 to P10 onto Alex’s rubric; his governs. The rubric id travels with every judgement.</li>
     <li><b>Capture</b> (organ 2, built): the recorder on Claude Code’s hooks writes the record as the job runs, intent first.</li>
     <li><b>Sign</b> (organ 3, built): recorder, judge and reviewer sign the bundle; anyone with the trust list checks it.</li>
+    <li><b>Key care</b> (organ 4, built): keys sealed under a passphrase; a lost or stolen key revoked, a role rotated.</li>
     <li><b>Bridge</b> (waits on acg-assess’s record format): records and flags go into acg-assess for review; decisions come back and are signed.</li>
     <li><b>Red team</b> (not yet run): people who did not write the judge, the guild’s red-teamer first, try to make a badly run job pass: hide an assumption, slip in a tool, polish a summary. Every attempt that gets through becomes a planted case in the suite, so the judge has to catch it from then on. This is what answers the shared-author weakness.</li>
     <li><b>Pilot</b> (not yet run): real guild jobs, with members’ consent, measuring how many flags reach a person, how many a reviewer overturns, and what capture costs in time.</li>
@@ -263,17 +277,18 @@
   <h3 id="security">Security and data protection</h3>
   <ul>
     <li><b>Nothing leaves your machines.</b> The recorder is a script Claude Code’s own hooks call inside the project; the judge is plain JavaScript run in Node or in a browser. Neither makes a network call. This page fetches only its own files, under a self-only content security policy with no inline script.</li>
-    <li><b>Less is captured than you might expect.</b> Not the prompt’s text: only that a prompt was sent. Not a tool’s input: only its hash. A copy of each file read or written is kept in the project’s <span class="mono">.acg</span> folder, named by its hash, on your disk. The goal, the claims and the notes you write are in the record as you wrote them.</li>
+    <li><b>Less is captured than you might expect.</b> Not the prompt’s text: only that a prompt was sent. Not a tool’s input: only its hash. A copy of each file read or written is kept in the project’s <span class="mono">.acg</span> folder, named by its hash, on your disk; that includes any secret file the agent reads, so keep <span class="mono">.acg</span> out of version control and protect it as you protect the project. A file too large to keep is recorded by a hash only. The goal, the claims and the notes you write are in the record as you wrote them; a shared record carries them, and hashes, not the files.</li>
     <li><b>Tamper-evident by construction.</b> Every log line carries the hash of the line before; the recorder signs where the log ends; the judge signs the hash of its judgement; checking a bundle re-runs the judge. Each attack the measurements tried was refused (see <a href="#measured">Measured</a>).</li>
-    <li><b>Keys.</b> Each party’s Ed25519 key is made on its own machine; only public keys are shared, on a trust list you own. A private key in use is held by the platform as non-exportable. Seeds are stored as plain files today, readable only by their owner on Linux and macOS: protect that folder as you protect other credentials, and take a lost key off the trust list.</li>
+    <li><b>Keys.</b> Each party’s Ed25519 key is made on its own machine; only public keys are shared, on a trust list you own. Seeds are sealed at rest under a passphrase (PBKDF2-SHA-256 into AES-256-GCM, through the platform’s WebCrypto), and a private key in use is held by the platform as non-exportable. A lost or stolen key is revoked on the trust list, and every bundle it signed is refused; rotation replaces a role’s key in one command. See <a href="#keycare">Key care</a>.</li>
     <li><b>Personal data.</b> Members are pseudonymous by default (an id you choose). Records are files you hold: you decide what is shared, and deleting a job’s folder deletes it.</li>
     <li><b>Supply chain.</b> No runtime dependencies. The source is open (MIT); the tests, the mutation gate and every measurement re-run on GitHub’s runner on every change.</li>
+    <li><b>Certifications.</b> It holds none of its own and claims none: it is software you run, so it sits inside your own controls and your own certifications, and the supplier receives none of your data.</li>
   </ul>
 
   <h3>Roll-out in a business</h3>
   <ol class="steps">
     <li><b>Pick one project and one team.</b> Copy the hook settings into that project’s <span class="mono">.claude/settings.json</span> and keep <span class="mono">.acg/</span> out of version control.</li>
-    <li><b>Make the keys.</b> <span class="mono">acg keys</span> on the recording machine, the judging machine and each reviewer’s; collect the public keys into one trust list that whoever signs off owns.</li>
+    <li><b>Make the keys.</b> <span class="mono">acg keys</span>, with a passphrase in <span class="mono">ACG_PASSPHRASE</span> so each key is sealed, on the recording machine, the judging machine and each reviewer’s; collect the public keys into one trust list that whoever signs off owns. A lost key is revoked on that list, and a role rotated, in one command each.</li>
     <li><b>Seal, work, claim.</b> Each job starts with <span class="mono">acg seal</span>; the team notes assumptions and claims as they go.</li>
     <li><b>Judge, bundle, review.</b> <span class="mono">acg bundle</span> signs each finished job; a reviewer decides the flags with <span class="mono">acg review</span>; <span class="mono">acg verify-bundle</span> checks any bundle against the trust list.</li>
     <li><b>Measure the pilot.</b> Flags per job, how many a reviewer overturns, minutes a review takes before and after. Those are your numbers for the cost case.</li>
@@ -284,6 +299,7 @@
   <ul>
     <li><b>Supplied by AI Native Solutions</b> (<a href="https://www.ai-nativesolutions.com">ai-nativesolutions.com</a>); contact through that site. Support, service levels, warranty and liability are agreed for each deployment.</li>
     <li><b>Yours to keep.</b> MIT licensed: run it, change it, keep it. It needs no account, no licence server and no service of ours, so it keeps running without us. Records, logs, bundles and keys are plain files on your machines.</li>
+    <li><b>Your data stays yours.</b> Run by your team, it sends the supplier nothing, so there is no data to process on your behalf. If you ask for hands-on support, what is shared is agreed in that deployment’s terms.</li>
     <li><b>Exit</b> is removing the hook from a project’s settings. Every record already made stays readable and checkable.</li>
   </ul>
 
@@ -293,7 +309,7 @@
     <li><b>The proof so far is on its own suite.</b> The planted-failure suite and the judge share an author; no red team has tried to game a record and no real pilot has run. Run your pilot and measure it before relying on the catch rate.</li>
     <li><b>One harness.</b> The recorder works with Claude Code’s hooks. Another agent harness needs its own recorder or importer.</li>
     <li><b>The rubric is a proposal.</b> P0 to P10 are built from known agentic failure modes and versioned; the guild’s acg-assess rubric governs where it applies, and yours can too.</li>
-    <li><b>Keys are files.</b> A stolen seed signs as its owner until it is taken off the trust list. Guard the key folder.</li>
+    <li><b>Keys.</b> A sealed key is as strong as its passphrase, and a key in use is as safe as the machine using it; no hardware key is supported. A key revoked late has already signed: everything it signed is refused once it is revoked, so re-sign what you still need with a trusted key.</li>
     <li><b>Live hooks see prompts, not each model request.</b> A live record marks each prompt as the start of model work; the importer, reading a transcript, sees each request.</li>
   </ul>
 
@@ -303,7 +319,7 @@
 
 <section id="cost">
   <h2><small>Cost case</small>What reviewing agent work costs you now, and with this</h2>
-  <p>Your own numbers in, sourced figures for the rest. The inputs below start at example values: change them to yours. The share of review time this takes off is not measured yet; a pilot measures it, so it is yours to set.</p>
+  <p>Your own numbers in, sourced figures for the rest. The inputs below start at example values: change them to yours. The share of review time this takes off is not measured yet; a pilot measures it, so it is yours to set. If nobody reviews how agent work is done today, “today” here is what a review would cost you, and the case is about the risk you carry without one.</p>
   <div class="panel">
     <div class="inputs">
       <label>Agent jobs reviewed a week <input id="c-jobs" type="number" min="0" max="100000" step="1"></label>
@@ -331,7 +347,7 @@
   <p><b>Problem.</b> Agentic work fails quietly: hidden assumptions, unsanctioned tools, finish-bias, missing evidence, persuasive jargon, no independent check. Code review sees the output, not the decisions that led to it, and the agent’s own account of its process is the least trustworthy record there is.</p>
   <p><b>Method.</b> Write the intent down and hash it before the first model call. Record everything else as an append-only, hash-chained timeline with artifacts by hash. Judge the record with separate, deterministic code against a versioned rubric; each outcome carries pointers to its evidence; judgement calls only flag, and every flag goes to a person. Sign the record, where its log ends, the judgement and each reviewer’s decision, so the whole can be checked by anyone holding the public keys, and the judgement re-run byte for byte. Each part of the system is built against claims committed before its code, measured, and kept when it fails.</p>
   <p><b>Result so far.</b> <span id="paper-result">From the receipts, once loaded.</span></p>
-  <p><b>Limits.</b> The planted-failure suite and the judge share an author. No real guild job has been judged; no red team has tried to game a record. The recorder works with one harness, Claude Code. Keys are plain files. The bridge into acg-assess waits on its record format, and the portfolio comes after it.</p>
+  <p><b>Limits.</b> The planted-failure suite and the judge share an author. No real guild job has been judged; no red team has tried to game a record. The recorder works with one harness, Claude Code. Keys are sealed at rest, not held in hardware. The bridge into acg-assess waits on its record format, and the portfolio comes after it.</p>
 </section>
 
 <section id="faq">
@@ -342,6 +358,7 @@
   <h3>Can it record a live Claude Code job?</h3><p>Yes, through Claude Code’s own hooks, per project: see <a href="#record">Record a job</a>. It was measured by replaying real past jobs into the hook, a process per event, rather than inside a live session; the receipt says so.</p>
   <h3>Does my data leave my machine?</h3><p>No. The recorder and the judge make no network calls; the judge runs in your browser or on your machine. Sharing a record for review or a portfolio is your choice.</p>
   <h3>What does it cost?</h3><p>No licence fee: it is MIT licensed. Your cost is the time to set it up and the reviewer time it does not take off; the <a href="#cost">cost case</a> works that out with your numbers. Support, if you want it, is agreed per deployment with AI Native Solutions.</p>
+  <h3>What if a key is stolen?</h3><p>Revoke it on the trust list (<span class="mono">acg revoke</span>) and rotate the role (<span class="mono">acg rotate</span>): every bundle the stolen key signs, before or after, is refused and says it was revoked. A key sealed under a passphrase is no use to someone who copies only the file. See <a href="#keycare">Key care</a>.</p>
   <h3>What if you stop maintaining it?</h3><p>It keeps working. It needs no service, account or licence server of ours, and every record is a file you hold and can check with the code you have.</p>
   <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given <span data-r="1:facts.A5.malformed">…</span> broken records, the judge never crashed, but it passed <span data-r="1:facts.A5.cleanPass">…</span> of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly (<span data-r="1b:facts.B1.cleanPass">…</span> clean passes). It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on <span data-r="1c:facts.fresh.damaged">…</span> fresh broken records, <span data-r="1c:facts.fresh.cleanPass">…</span> passed cleanly. The recorder (organ 2) missed one kind of tampering: cutting off the last lines of a job’s log leaves a shorter log whose lines still each follow the one before. Every other edit was caught. Organ 3 anchored where the log ends, signed: on the same real logs every attack was then refused, the cut end included. Its own measurement had a flaw too: its forged judgement (“every check passes”) was refused for only <span data-r="3:facts.F2.judgementLie">…</span> of the <span data-r="3:facts.bundles">…</span> jobs, because for the rest it was simply true; 3b forged one that really differed, and <span data-r="3b:facts.falseRefused">…</span> were refused. See <a href="#measured">Measured</a>.</p>
 </section>

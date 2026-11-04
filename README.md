@@ -22,6 +22,7 @@ node tools/measure-1b.mjs --check     # organ 1b (P0, well-formed)
 node tools/measure-1c.mjs --check     # organ 1c (the strict schema)
 node tools/measure-3.mjs --check      # organ 3 (signed records; F5 needs the real transcripts and is local)
 node tools/measure-3b.mjs --check     # organ 3b (a false judgement refused)
+node tools/measure-4.mjs --check      # organ 4 (key care)
 ```
 
 CI also runs witness, the mutation gate, on every kernel in `src/`, and checks the run against `receipts/gate.json`
@@ -68,6 +69,20 @@ decision on each flagged check. Checking a bundle refuses a log cut short or rew
 that judging the record again does not give, a signature moved onto another record, and any key not on the trust list.
 Ed25519 through WebCrypto, so the browser checks a bundle exactly as Node does.
 
+## Key care (organ 4)
+
+```
+ACG_PASSPHRASE='…' node /path/to/acg-autopilot/bin/acg.mjs keys         # new keys sealed under the passphrase; no plain seed written
+ACG_PASSPHRASE='…' node /path/to/acg-autopilot/bin/acg.mjs keys --seal  # seal plain keys made earlier, same public keys
+node /path/to/acg-autopilot/bin/acg.mjs revoke --key <hex> --reason "stolen laptop"   # every bundle it signed is refused
+node /path/to/acg-autopilot/bin/acg.mjs rotate --role recorder         # a new key for the role; the old one revoked as rotated
+```
+
+A sealed key is the seed encrypted with AES-256-GCM under a key stretched from the passphrase (PBKDF2-SHA-256, 600,000
+rounds by default), with a fresh salt and nonce; a wrong passphrase or a changed file does not open it. A revoked key is
+trusted for nothing, and `verify-bundle` names it as revoked. It protects keys at rest, not in use, and it cannot use a
+hardware key.
+
 ## How it is built
 
 Each organ's claims are committed before its code (`claims/`), measured by a seeded suite (`tools/`), and the result
@@ -81,12 +96,13 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 - `src/log.mjs`, `src/normalise.mjs`, `src/transcript.mjs`, `bin/acg.mjs`: capture (organ 2): the hash-chained log, the
   record from the log, a past transcript imported, the command line and the hook.
 - `src/sign.mjs`, `src/bundle.mjs`: signed records (organ 3).
+- `src/keystore.mjs`, `src/trust.mjs`: key care (organ 4): sealed keys, revocation, rotation.
 - `src/reviewcase.mjs`, `data/basis.json`: the page's cost case, every external figure from the sourced basis.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
 - `tools/gate.mjs`, `receipts/gate.json`: the gate's own receipt, checked by CI.
 
 Built and measured: organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the
-strict schema), capture from Claude Code (organ 2) and signed records (organ 3, then 3b); the receipts hold every result,
+strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b) and key care (organ 4); the receipts hold every result,
 failures included. Waiting: the bridge into acg-assess (it needs acg-assess's record format), and the member portfolio
 after it. Honest scope: it measures process discipline and evidence, not whether the work is correct; the
 planted-failure suite and the judge share an author, so the independent tests are a red team and a pilot on real guild
