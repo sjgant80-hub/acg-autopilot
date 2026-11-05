@@ -16,9 +16,12 @@
 //   acg keys --seal             seal the plain .seed files made earlier, same public keys, and remove the plain files
 //   acg revoke --key HEX --reason "…" [--trust trust.json]     a lost or stolen key: trusted for nothing from now on
 //   acg rotate --role recorder|judge|reviewer [--trust trust.json]   a new key for the role; the old one revoked as rotated
+// The member's portfolio (organ 5): only the jobs named are in it; the judge's key attests each after checking it whole.
+//   acg portfolio --member ID --include all|JOB,JOB [--reveal JOB,JOB] [--trust trust.json] [--out portfolio.json]
+//   acg check-portfolio <portfolio.json> [--trust trust.json]
 // State lives in $ACG_HOME, or .acg in the current folder: jobs/<job>/{log.jsonl, head, intent.json, store/, record.json}.
 // The hook never blocks the harness and never prints: on any error it writes a line to errors.log and exits 0.
-import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, copyFileSync, readdirSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { link, parseLog, verifyLog, eventsOf, GENESIS } from '../src/log.mjs';
@@ -30,6 +33,7 @@ import { signerFromSeed } from '../src/sign.mjs';
 import { makeBundle } from '../src/bundle.mjs';
 import { sealSeed, openSeed } from '../src/keystore.mjs';
 import { revoke as revokeKey, rotate as rotateKey, verifyTrusted } from '../src/trust.mjs';
+import { buildPortfolio, checkPortfolio } from '../src/portfolio.mjs';
 
 const HOME = resolve(process.env.ACG_HOME || join(process.cwd(), '.acg'));
 const EVENTS = ['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionStart'];
@@ -211,6 +215,21 @@ async function review(o) {
   writeFileSync(p, JSON.stringify({ ...b, reviewed: next.reviewed }, null, 1) + '\n');
   return 'reviewed ' + o.check + ': ' + o.decision;
 }
+async function portfolio(o) {
+  const member = typeof o.member === 'string' ? o.member : process.env.ACG_MEMBER;
+  if (!member) throw new Error('acg portfolio needs --member: the id the jobs were recorded under (ACG_MEMBER when they were bundled)');
+  if (typeof o.include !== 'string') throw new Error('acg portfolio needs --include: the jobs to show, by id, or all — nothing is in a portfolio unless you name it');
+  const judge = await signer('judge', o);
+  if (!judge) throw new Error('no judge key: run acg keys first');
+  const dir = join(HOME, 'jobs'), files = existsSync(dir) ? readdirSync(dir).map((j) => join(dir, j, 'bundle.json')).filter((f) => existsSync(f)) : [];
+  const bundles = files.map((f) => JSON.parse(readFileSync(f, 'utf8')));
+  const include = o.include === 'all' ? bundles.filter((b) => isObj(b) && isObj(b.record) && b.record.member_id === member).map((b) => b.record.job_id) : listOf(o.include, ',');
+  const { portfolio: p, left } = await buildPortfolio({ member, bundles, trust: readTrust(trustPath(o)), judge, include, reveal: listOf(typeof o.reveal === 'string' ? o.reveal : '', ',') });
+  const out = typeof o.out === 'string' ? o.out : join(HOME, 'portfolio' + (SAFE.test(member) ? '-' + member : '') + '.json');
+  writeFileSync(out, JSON.stringify(p, null, 1) + '\n');
+  const refused = left.filter((l) => l.why.startsWith('refused'));
+  return out + ' · ' + p.entries.length + ' job(s), ' + p.scores.revealed + ' revealed' + (refused.length ? '\nnot in it, refused: ' + refused.map((l) => l.job + ' (' + l.why.slice(9) + ')').join('; ') : '');
+}
 const show = (a) => a.results.map((x) => x.id.padEnd(4) + x.outcome.padEnd(5) + x.why).join('\n') + '\nreview queue: ' + (a.review.join(', ') || 'nothing to decide');
 
 async function main() {
@@ -228,9 +247,11 @@ async function main() {
   if (cmd === 'bundle') return console.log(await bundle(o));
   if (cmd === 'review') return console.log(await review(o));
   if (cmd === 'verify-bundle') { const b = JSON.parse(readFileSync(o._[1], 'utf8')), v = await verifyTrusted(b, JSON.parse(readFileSync(trustPath(o), 'utf8'))); console.log(v.ok ? 'the bundle verifies' : 'REFUSED:\n  ' + v.problems.join('\n  ')); process.exitCode = v.ok ? 0 : 2; return; }
+  if (cmd === 'portfolio') return console.log(await portfolio(o));
+  if (cmd === 'check-portfolio') { const p = JSON.parse(readFileSync(o._[1], 'utf8')), v = await checkPortfolio(p, readTrust(trustPath(o))); console.log(v.ok ? 'the portfolio checks: ' + v.jobs + ' job(s), ' + v.revealed + ' revealed' : 'REFUSED:\n  ' + v.problems.join('\n  ')); process.exitCode = v.ok ? 0 : 2; return; }
   if (cmd === 'judge') { const r = o._[1] ? JSON.parse(readFileSync(o._[1], 'utf8')) : await recordOf(currentJob(o)); return console.log(show(assessStrict(r, await factsOf(r)))); }
   if (cmd === 'import') { const { record, counts } = await importTranscript(readFileSync(o._[1], 'utf8')); const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
-  console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle | revoke | rotate — see the top of bin/acg.mjs');
+  console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle | revoke | rotate | portfolio | check-portfolio — see the top of bin/acg.mjs');
 }
 
 const isMain = process.argv[1] && resolve(process.argv[1]).replace(/\\/g, '/').endsWith('bin/acg.mjs');

@@ -48,6 +48,14 @@ jobs:
             grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
             node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
           done
+      - name: organ 5's mutation gate - the judge's attestation, the member's portfolio, and the check an employer runs
+        run: |
+          T="test/portfolio.test.mjs"
+          for k in src/portfolio.mjs; do
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test $T | tee /tmp/w.txt
+            grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
+            node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
+          done
       - name: the cost case's mutation gate - the brochure's numbers
         run: |
           T="test/reviewcase.test.mjs"
@@ -70,3 +78,5 @@ jobs:
         run: node tools/measure-3b.mjs --check
       - name: organ 4 - sealed keys, wrong passphrases and changed files, revocation and rotation over the 1,000 bundles, the command line; as the receipt says
         run: node tools/measure-4.mjs --check
+      - name: organ 5 - portfolios of the 1,000 signed jobs: chosen, tampered, marked, edited, revealed, damaged, the command line; as the receipt says
+        run: node tools/measure-5.mjs --check
