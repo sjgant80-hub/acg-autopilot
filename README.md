@@ -26,6 +26,7 @@ node tools/measure-4.mjs --check      # organ 4 (key care)
 node tools/measure-5.mjs --check      # organ 5 (the member's portfolio)
 node tools/measure-6.mjs --check      # organ 6 (Gemini CLI import; the real sessions are local: --local)
 node tools/measure-6b.mjs --check     # organ 6b (a job with no model call is not imported)
+node tools/measure-7.mjs --check      # organ 7 (the withhold list: secret files kept out of .acg)
 ```
 
 CI also runs witness, the mutation gate, on every kernel in `src/`, and checks the run against `receipts/gate.json`
@@ -59,6 +60,24 @@ first prompt. Every log line carries the hash of the line before it. The hook ne
 an error goes to `.acg/errors.log`. An imported past job sealed no intent, and its record says so ("none sealed"), so it
 fails P1. Either import refuses a job with no model call (organ 6b): there is nothing to judge, and P1 would pass on
 nothing.
+
+## Keep secrets out of the record (organ 7)
+
+Without a list, the recorder copies every file the agent reads or writes into `.acg`, secret files included. Copy the
+starter list of common secret files into the project's `.acg/withhold` and add your own:
+
+```
+cp /path/to/acg-autopilot/examples/withhold .acg/withhold
+```
+
+A file on the list is recorded by name only: no copy in `.acg`, no hash of its bytes, no hash of the tool input that
+carried it. The record lists it as an artifact not stored, so the job's P7 fails at that file and a reviewer sees that an
+input was withheld. A line with no `/` matches a file's or folder's name anywhere; a line with a `/` matches the path
+from the project; `*` and `?` stop at a folder, `**` does not; case and backslashes do not matter; `#` starts a
+comment. A list that cannot be read withholds every file and says so in `.acg/errors.log`. It keeps a secret out of
+the record; it does not stop the agent reading the file. Measured over 50 jobs through the real command line
+(`receipts/organ-7.json`): nothing of any withheld file found under `.acg`, while the same search found every one with no
+list.
 
 ## Sign a record (organ 3)
 
@@ -118,15 +137,19 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 - `src/log.mjs`, `src/normalise.mjs`, `src/transcript.mjs`, `bin/acg.mjs`: capture (organ 2): the hash-chained log, the
   record from the log, a past transcript imported, the command line and the hook.
 - `src/gemini.mjs`: a second harness (organ 6): a finished Gemini CLI session imported as a record.
+- `src/withhold.mjs`, `examples/withhold`: the withhold list (organ 7): which files the recorder keeps out of `.acg`.
 - `src/sign.mjs`, `src/bundle.mjs`: signed records (organ 3).
 - `src/keystore.mjs`, `src/trust.mjs`: key care (organ 4): sealed keys, revocation, rotation.
 - `src/portfolio.mjs`: the member's portfolio (organ 5): the judge's attestation, the portfolio of the jobs a member chose, the check an employer runs.
-- `src/reviewcase.mjs`, `data/basis.json`: the page's cost case, every external figure from the sourced basis.
+- `src/reviewcase.mjs`, `data/basis.json`: the page's cost case, every external figure from the sourced basis, the reader's
+  set-up hours and the weeks the saving takes to pay them back.
+- `test/egress.test.mjs`: the kernels, the command line and the page import nothing that can open a connection, and the
+  package has no runtime dependencies.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
 - `tools/gate.mjs`, `receipts/gate.json`: the gate's own receipt, checked by CI.
 
 Built and measured: organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the
-strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b), key care (organ 4), the member's portfolio (organ 5) and a second harness, Gemini CLI, by import (organ 6); the receipts hold every
+strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b), key care (organ 4), the member's portfolio (organ 5), a second harness, Gemini CLI, by import (organ 6), and the withhold list (organ 7); the receipts hold every
 result, failures included. Waiting: the bridge into acg-assess (it needs acg-assess's record format). Honest scope: it measures process discipline and evidence, not whether the work is correct; the
 planted-failure suite and the judge share an author, so the independent tests are a red team and a pilot on real guild
 jobs, neither yet run.

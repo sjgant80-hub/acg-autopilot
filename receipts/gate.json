@@ -3,8 +3,8 @@
  "witness": "v0.6",
  "about": "What CI ran on GitHub's runner: the tests, and witness (the mutation gate) on every kernel. tools/gate.mjs checks each run against this file; a kernel that changes changes its mutants, and this receipt with it.",
  "tests": {
-  "count": 82,
-  "passed": 82
+  "count": 86,
+  "passed": 86
  },
  "kernels": [
   {
@@ -88,8 +88,8 @@
   {
    "file": "src/reviewcase.mjs",
    "tests": "test/reviewcase.test.mjs",
-   "total": 21,
-   "killed": 21
+   "total": 25,
+   "killed": 25
   }
  ]
 }

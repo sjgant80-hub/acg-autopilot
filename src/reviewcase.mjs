@@ -6,10 +6,13 @@
 // UK median wage with on-costs left out; CPI applied to every later year. Like for like: the cloud judge takes the SAME
 // share of the reviewer's time off as this does, so the two differ only in the per-token bill (and in where the
 // transcripts go). The share is not measured yet (the pilot on real jobs measures it), so it is the reader's input.
+// Setting it up is a one-off cost in staff time, the reader's own hours at the same wage, added in the first year to
+// both routes (a cloud judge needs the recorder too), so it lowers the saving against today and cancels against the
+// cloud judge; the payback is the whole weeks the weekly saving takes to cover it (null when there is no saving).
 // No price of ours appears here: these are the buyer's own costs. Pure, total, deterministic: garbage in gives
 // { ok: false, why }, never a throw.
 
-export const DEFAULTS = Object.freeze({ jobsPerWeek: 25, minutesPerJob: 30, share: 0.5, tokensIn: 50000, tokensOut: 2000, years: 3 });
+export const DEFAULTS = Object.freeze({ jobsPerWeek: 25, minutesPerJob: 30, share: 0.5, tokensIn: 50000, tokensOut: 2000, years: 3, setupHours: 8 });
 export const BASIS_KEYS = Object.freeze(['wageMedianHourly', 'cpi', 'frontier', 'fxGbpPerUsd', 'electricityPencePerKwh', 'laptopExtraWatts', 'hoursPerYear']);
 
 const isNum = (x) => typeof x === 'number' && Number.isFinite(x) && x >= 0;
@@ -37,7 +40,7 @@ export function over(perYear, cpi, years) {
   return r2(total);
 }
 
-/** the case. input (all optional, defaults above): jobsPerWeek, minutesPerJob, share (0 to 1), tokensIn, tokensOut, years */
+/** the case. input (all optional, defaults above): jobsPerWeek, minutesPerJob, share (0 to 1), tokensIn, tokensOut, years, setupHours */
 export function reviewCase(basis, input) {
   try {
     const f = figures(basis);
@@ -48,16 +51,20 @@ export function reviewCase(basis, input) {
     if (!isNum(i.share) || i.share > 1) return { ok: false, why: 'the share of the reviewer’s time taken off: 0 to 1' };
     if (!isNum(i.tokensIn) || !isNum(i.tokensOut)) return { ok: false, why: 'tokens: numbers' };
     if (!Number.isInteger(i.years) || i.years < 1 || i.years > 10) return { ok: false, why: 'years: 1 to 10' };
+    if (!isNum(i.setupHours) || i.setupHours > 2000) return { ok: false, why: 'hours to set it up: 0 to 2,000' };
     const jobs = i.jobsPerWeek * 52;
     const staff = r2(jobs * i.minutesPerJob / 60 * f.wage);                                       // reviewing how each job was done, a year
     const takenOff = r2(staff * i.share);                                                         // the share the record and the judge take off
     const cloud = r2(jobs * (i.tokensIn * f.apiIn + i.tokensOut * f.apiOut) / 1e6 * f.fx);        // a cloud model reading every transcript
     const power = r2(f.watts * f.hours / 1000 * f.pence / 100);                                   // an upper bound: as if it drew power all year
+    const setup = r2(i.setupHours * f.wage);                                                      // once, in the first year, on both routes
     const perYear = { today: staff, cloudJudge: r2(staff - takenOff + cloud), own: r2(staff - takenOff + power) };
-    const total = Object.fromEntries(Object.entries(perYear).map(([k, v]) => [k, over(v, f.cpi, i.years)]));
+    const total = Object.fromEntries(Object.entries(perYear).map(([k, v]) => [k, r2(over(v, f.cpi, i.years) + (k === 'today' ? 0 : setup))]));
+    const weekly = (perYear.today - perYear.own) / 52;
     return {
-      ok: true, inputs: i, lines: { jobs, perJob: r2(i.minutesPerJob / 60 * f.wage), staff, takenOff, cloud, power }, perYear, over: total,
+      ok: true, inputs: i, lines: { jobs, perJob: r2(i.minutesPerJob / 60 * f.wage), staff, takenOff, cloud, power, setup }, perYear, over: total,
       savingPerYear: r2(perYear.today - perYear.own), savingOver: r2(total.today - total.own), versusCloudOver: r2(total.cloudJudge - total.own),
+      paybackWeeks: weekly > 0 ? Math.ceil(setup / weekly) : null,
     };
   } catch { return { ok: false, why: 'the inputs could not be read' }; }
 }

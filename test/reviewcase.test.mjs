@@ -28,25 +28,47 @@ test('the default case, every line from the basis', () => {
   const r = reviewCase(BASIS, {});
   assert.equal(r.ok, true);
   assert.deepEqual(r.inputs, DEFAULTS);
-  assert.deepEqual({ ...DEFAULTS }, { jobsPerWeek: 25, minutesPerJob: 30, share: 0.5, tokensIn: 50000, tokensOut: 2000, years: 3 });
-  assert.deepEqual(r.lines, { jobs: 1300, perJob: 9.84, staff: 12785.5, takenOff: 6392.75, cloud: 117.62, power: 32.21 });
+  assert.deepEqual({ ...DEFAULTS }, { jobsPerWeek: 25, minutesPerJob: 30, share: 0.5, tokensIn: 50000, tokensOut: 2000, years: 3, setupHours: 8 });
+  assert.deepEqual(r.lines, { jobs: 1300, perJob: 9.84, staff: 12785.5, takenOff: 6392.75, cloud: 117.62, power: 32.21, setup: 157.36 });
   assert.deepEqual(r.perYear, { today: 12785.5, cloudJudge: 6510.37, own: 6424.96 });
-  assert.deepEqual(r.over, { today: 39557.84, cloudJudge: 20142.83, own: 19878.58 });
-  assert.deepEqual([r.savingPerYear, r.savingOver, r.versusCloudOver], [6360.54, 19679.26, 264.25]);
+  assert.deepEqual(r.over, { today: 39557.84, cloudJudge: 20300.19, own: 20035.94 });
+  assert.deepEqual([r.savingPerYear, r.savingOver, r.versusCloudOver, r.paybackWeeks], [6360.54, 19521.9, 264.25, 2]);
   assert.deepEqual(reviewCase(BASIS, null), r); assert.deepEqual(reviewCase(BASIS), r);
 });
 
 test('the reader’s own inputs, and like for like: the cloud judge and this take the same share off', () => {
   const r = reviewCase(BASIS, { jobsPerWeek: 10, minutesPerJob: 45, share: 0.25, tokensIn: 80000, tokensOut: 4000, years: 5 });
-  assert.deepEqual(r.lines, { jobs: 520, perJob: 14.75, staff: 7671.3, takenOff: 1917.83, cloud: 78.41, power: 32.21 });
+  assert.deepEqual(r.lines, { jobs: 520, perJob: 14.75, staff: 7671.3, takenOff: 1917.83, cloud: 78.41, power: 32.21, setup: 157.36 });
   assert.deepEqual(r.perYear, { today: 7671.3, cloudJudge: 5831.88, own: 5785.68 });
-  assert.deepEqual(r.over, { today: 40809.47, cloudJudge: 31024.2, own: 30778.43 });
-  assert.deepEqual([r.savingPerYear, r.savingOver, r.versusCloudOver], [1885.62, 10031.04, 245.77]);
+  assert.deepEqual(r.over, { today: 40809.47, cloudJudge: 31181.56, own: 30935.79 });
+  assert.deepEqual([r.savingPerYear, r.savingOver, r.versusCloudOver, r.paybackWeeks], [1885.62, 9873.68, 245.77, 5]);
   assert.equal(r.perYear.cloudJudge, Math.round((r.lines.staff - r.lines.takenOff + r.lines.cloud) * 100) / 100);
   assert.equal(r.perYear.own, Math.round((r.lines.staff - r.lines.takenOff + r.lines.power) * 100) / 100);
   const none = reviewCase(BASIS, { share: 0 });
   assert.equal(none.perYear.own, Math.round((none.lines.staff + none.lines.power) * 100) / 100, 'nothing taken off: the run cost is added, never hidden');
   assert.equal(reviewCase(BASIS, { share: 1 }).perYear.own, reviewCase(BASIS, { share: 1 }).lines.power);
+});
+
+test('setting it up: the reader’s hours at the same wage, once, in the first year, on both routes; the payback in whole weeks', () => {
+  const r = reviewCase(BASIS, { setupHours: 40 }), none = reviewCase(BASIS, { setupHours: 0 });
+  assert.equal(r.lines.setup, Math.round(40 * 19.67 * 100) / 100);
+  assert.equal(r.over.today, none.over.today, 'today has nothing to set up');
+  assert.equal(r.over.own, Math.round((none.over.own + r.lines.setup) * 100) / 100, 'added once, not raised by CPI');
+  assert.equal(r.over.cloudJudge, Math.round((none.over.cloudJudge + r.lines.setup) * 100) / 100, 'the cloud judge needs the recorder too');
+  assert.equal(r.versusCloudOver, none.versusCloudOver, 'so it cancels against the cloud judge');
+  assert.equal(r.savingOver, Math.round((none.savingOver - r.lines.setup) * 100) / 100, 'and lowers the saving against today');
+  assert.deepEqual(r.perYear, none.perYear, 'it is no yearly cost');
+  assert.equal(r.savingPerYear, none.savingPerYear);
+  const weekly = (r.perYear.today - r.perYear.own) / 52;
+  assert.equal(r.paybackWeeks, Math.ceil(r.lines.setup / weekly)); assert.equal(r.paybackWeeks, 7);
+  assert.equal(none.paybackWeeks, 0, 'nothing to pay back');
+  assert.equal(reviewCase(BASIS, { setupHours: 0.5 }).paybackWeeks, 1, 'a part week counts as a week');
+  assert.equal(reviewCase(BASIS, { share: 0 }).paybackWeeks, null, 'no saving, no payback');
+  assert.equal(reviewCase(BASIS, { share: 0, setupHours: 0 }).paybackWeeks, null, 'even with nothing to set up');
+  assert.equal(reviewCase(BASIS, { jobsPerWeek: 0 }).paybackWeeks, null, 'no jobs, no saving');
+  assert.equal(reviewCase(base({ laptopExtraWatts: { ...BASIS.laptopExtraWatts, value: 0 } }), { share: 0 }).paybackWeeks, null, 'a saving of exactly nothing pays nothing back');
+  assert.equal(reviewCase(BASIS, { years: 1, setupHours: 10 }).over.own, Math.round((reviewCase(BASIS, { years: 1, setupHours: 0 }).over.own + 10 * 19.67) * 100) / 100);
+  assert.equal(reviewCase(base({ wageMedianHourly: { ...BASIS.wageMedianHourly, value: 30 } }), { setupHours: 10 }).lines.setup, 300, 'at the sourced wage');
 });
 
 test('the figures move with the basis, not with anything typed', () => {
@@ -78,6 +100,8 @@ test('boundaries hold at both ends of every input, and the reason is given', () 
   for (const v of [-0.1, 1.01, NaN, '0.5']) assert.equal(why({ share: v }), 'the share of the reviewer’s time taken off: 0 to 1', String(v));
   for (const t of [{ tokensIn: -1 }, { tokensOut: -1 }, { tokensIn: 'x' }, { tokensOut: Infinity }]) assert.equal(why(t), 'tokens: numbers', JSON.stringify(t));
   for (const v of [0, 11, 1.5, '3', -2]) assert.equal(why({ years: v }), 'years: 1 to 10', String(v));
+  for (const ok of [{ setupHours: 0 }, { setupHours: 2000 }]) assert.equal(reviewCase(BASIS, ok).ok, true, JSON.stringify(ok));
+  for (const v of [-1, 2000.5, NaN, Infinity, '8', null]) assert.equal(why({ setupHours: v }), 'hours to set it up: 0 to 2,000', String(v));
 });
 
 test('a basis missing a figure, or garbage anywhere, is answered, never thrown', () => {

@@ -46,7 +46,7 @@ async function go() {
 }
 
 // ── the receipts: the Measured panels, the header line, the white paper's result, every bound number in the prose ─────
-const RECEIPTS = ['1', '1b', '1c', '2', '3', '3b', '4', '5', '6', '6b'];
+const RECEIPTS = ['1', '1b', '1c', '2', '3', '3b', '4', '5', '6', '6b', '7'];
 const at = (o, path) => path.split('.').reduce((x, k) => (x && typeof x === 'object' ? x[k] : undefined), o);
 async function receipts() {
   const got = await Promise.all(RECEIPTS.map((o) => get('receipts/organ-' + o + '.json')));
@@ -61,7 +61,7 @@ async function receipts() {
   $('receipts').innerHTML = rs.map((r) => '<div class="panel"><h3>Organ ' + esc(r.organ) + ' · ' + r.held + ' of ' + r.verdicts.length + ' held</h3><p class="dim">Sealed in <a href="https://github.com/sjgant80-hub/acg-autopilot/commit/' + esc(r.sealed.commit) + '">' + esc(r.sealed.commit.slice(0, 7)) + '</a>, before its code. Receipt: <a href="receipts/organ-' + esc(r.organ) + '.json">receipts/organ-' + esc(r.organ) + '.json</a>.' + (r.local ? ' Measured on the machine that holds its data (' + esc(r.local) + ').' : '') + '</p>'
     + r.verdicts.map((v) => '<p><span class="tag ' + (v.held ? 'pass' : 'fail') + '">' + (v.held ? 'HELD' : 'FAILED') + '</span> <b>' + esc(v.id) + '</b> ' + esc(v.claim) + '<br><span class="dim">measured: ' + esc(v.measured) + '</span></p>').join('') + '</div>').join('');
   $('paper-result').textContent = rs.map((r) => 'Organ ' + r.organ + ': ' + r.held + ' of ' + r.verdicts.length + ' sealed claims held' + (r.failed ? ' (' + r.verdicts.filter((v) => !v.held).map((v) => v.id).join(', ') + ' failed and kept)' : '') + '.').join(' ')
-    + ' Every failure is on the record with what was measured; each later organ was sealed after the failure it answers, and says so.';
+    + ' Every failure is on the record with what was measured; an organ sealed after a failure or a gap it answers says so in its claims.';
 }
 async function gate() {
   const g = await get('receipts/gate.json');
@@ -160,7 +160,7 @@ async function pfTamper(title, change, trustOf = (t) => t) {
 const rescored = (p) => { p.scores = scoresOf(p.entries); return p; };
 
 // ── the cost case: the kernel over the sourced basis, with the reader's inputs ───────────────────────────────────────
-const INPUTS = { 'c-jobs': 'jobsPerWeek', 'c-min': 'minutesPerJob', 'c-share': 'share', 'c-tin': 'tokensIn', 'c-tout': 'tokensOut', 'c-years': 'years' };
+const INPUTS = { 'c-jobs': 'jobsPerWeek', 'c-min': 'minutesPerJob', 'c-share': 'share', 'c-tin': 'tokensIn', 'c-tout': 'tokensOut', 'c-years': 'years', 'c-setup': 'setupHours' };
 let BASIS = null;
 function cost() {
   if (!BASIS) return;
@@ -172,6 +172,8 @@ function cost() {
   $('c-out').innerHTML = '<div class="tw"><table><thead><tr><th>Reviewing how the agent work was done</th><th>A year</th><th>Over ' + y + ' year' + (y === 1 ? '' : 's') + '</th></tr></thead><tbody>'
     + row('Today: a reviewer’s time', 'today') + row('With a cloud model as judge', 'cloudJudge') + row('With this', 'own') + '</tbody></table></div>'
     + '<p><b>Against today: ' + gbp(r.savingPerYear) + ' a year, ' + gbp(r.savingOver) + ' over ' + y + ' year' + (y === 1 ? '' : 's') + '.</b> Against a cloud model as judge: ' + gbp(r.versusCloudOver) + ' over the same time, and no transcript leaves your machines.</p>'
+    + '<p>Setting it up: ' + gbp(r.lines.setup) + ' of staff time, once, in the first year, on both routes (it is in the totals above). '
+    + (r.paybackWeeks === null ? 'At these inputs there is no saving, so it never pays back.' : r.paybackWeeks === 0 ? 'Nothing to pay back.' : 'Paid back by the saving in ' + num(r.paybackWeeks) + ' week' + (r.paybackWeeks === 1 ? '' : 's') + '.') + '</p>'
     + '<p class="dim">' + num(r.lines.jobs) + ' jobs a year; ' + gbp(r.lines.perJob) + ' of reviewer time a job today; the cloud model’s tokens ' + gbp(r.lines.cloud) + ' a year; electricity at most ' + gbp(r.lines.power) + ' a year.</p>';
 }
 async function costSetup() {
