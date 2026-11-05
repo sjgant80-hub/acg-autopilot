@@ -1,0 +1,85 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": 6,
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-6.json",
+  "commit": "05217269b6e8dadced04a415a15519df43e37bc4",
+  "claimsSha256": "60d0b51e5eaea2ada47e4cc326b2c56c45f92c652878be29fd24af5d225518b6"
+ },
+ "local": "H1 and H2: this machine’s saved Gemini CLI sessions, counts only",
+ "facts": {
+  "H1": {
+   "sessions": 3,
+   "toolCalls": 4,
+   "replies": 6,
+   "toolUsesImported": 4,
+   "modelCallsImported": 6,
+   "faithful": 3,
+   "schemaPass": 3
+  },
+  "H2": {
+   "sessions": 3,
+   "p1Failed": 2,
+   "noneSealed": 3
+  },
+  "H3": {
+   "sessions": 500,
+   "exact": 500,
+   "events": 3811,
+   "replacedLists": 157
+  },
+  "H4": {
+   "inputs": 2000,
+   "threw": 0,
+   "unreadableRight": 2000,
+   "judged": 2000
+  },
+  "H5": {
+   "wrote": true,
+   "harness": true,
+   "toolsInOrder": true,
+   "judged": true,
+   "p1Failed": true
+  }
+ },
+ "verdicts": [
+  {
+   "id": "H1",
+   "kind": "property",
+   "claim": "Import is faithful on real sessions: for every Gemini CLI session saved on this machine, the imported record holds exactly the session's tool calls (each distinct tool-call id, in the order first written, by name) and one model call per distinct Gemini reply, as counted by a separate reading of the raw lines; and every imported record fits the strict schema (P0 passes).",
+   "held": true,
+   "measured": "3 real sessions: 3 imported faithfully (4 tool uses for 4 tool calls read separately; 6 model calls for 6 replies); 3 fit the strict schema"
+  },
+  {
+   "id": "H2",
+   "kind": "property",
+   "claim": "A past session is never dressed up: every imported real session, having no sealed intent, fails P1, and its intent's goal says none was sealed.",
+   "held": false,
+   "measured": "3 real sessions: P1 failed on 2; the intent says none was sealed on 3"
+  },
+  {
+   "id": "H3",
+   "kind": "property",
+   "claim": "The format as found: for 500 seeded synthetic sessions in that format (a header, $set lines, user and Gemini messages, replies written again with their tool calls, and a $set of messages that replaces the list), the import gives exactly the events the generator meant, in order: one model call per reply with its model and time, then one tool use per tool call with its name and time.",
+   "held": true,
+   "measured": "500 of 500 synthetic sessions imported to exactly the 3811 events meant (157 of them with a list of messages replaced)"
+  },
+  {
+   "id": "H4",
+   "kind": "property",
+   "claim": "Total: 2,000 garbage inputs (lines that are not JSON or not an object, lines of the wrong shape or with fields of the wrong type, and synthetic sessions cut at a random point) never make the importer throw; each line that is not a JSON object is counted as unreadable; and the strict rubric judges every record it gives without throwing.",
+   "held": true,
+   "measured": "2000 garbage inputs: the importer threw 0 times; unreadable lines counted right in 2000; judged without throwing 2000"
+  },
+  {
+   "id": "H5",
+   "kind": "property",
+   "claim": "The command line: acg import --harness gemini <session.jsonl> --out F writes a record whose harness is gemini-cli and whose tool uses are the session's, by name and in order; acg judge F judges it, and P1 fails.",
+   "held": true,
+   "measured": "acg import --harness gemini wrote a record: yes, of the gemini-cli harness: yes, its tool uses the session’s in order: yes; acg judge judged it: yes, P1 failed: yes"
+  }
+ ],
+ "held": 4,
+ "failed": 1
+}

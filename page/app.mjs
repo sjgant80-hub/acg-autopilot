@@ -46,7 +46,7 @@ async function go() {
 }
 
 // ── the receipts: the Measured panels, the header line, the white paper's result, every bound number in the prose ─────
-const RECEIPTS = ['1', '1b', '1c', '2', '3', '3b', '4', '5'];
+const RECEIPTS = ['1', '1b', '1c', '2', '3', '3b', '4', '5', '6'];
 const at = (o, path) => path.split('.').reduce((x, k) => (x && typeof x === 'object' ? x[k] : undefined), o);
 async function receipts() {
   const got = await Promise.all(RECEIPTS.map((o) => get('receipts/organ-' + o + '.json')));

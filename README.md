@@ -24,6 +24,7 @@ node tools/measure-3.mjs --check      # organ 3 (signed records; F5 needs the re
 node tools/measure-3b.mjs --check     # organ 3b (a false judgement refused)
 node tools/measure-4.mjs --check      # organ 4 (key care)
 node tools/measure-5.mjs --check      # organ 5 (the member's portfolio)
+node tools/measure-6.mjs --check      # organ 6 (Gemini CLI import; the real sessions are local: --local)
 ```
 
 CI also runs witness, the mutation gate, on every kernel in `src/`, and checks the run against `receipts/gate.json`
@@ -49,6 +50,7 @@ node /path/to/acg-autopilot/bin/acg.mjs note assumption --text "the header row i
 node /path/to/acg-autopilot/bin/acg.mjs claim --id c1 --text "all 40 tests pass" --evidence timeline:12 --criterion "tests pass"
 node /path/to/acg-autopilot/bin/acg.mjs verify && node /path/to/acg-autopilot/bin/acg.mjs judge
 node /path/to/acg-autopilot/bin/acg.mjs import ~/.claude/projects/<project>/<session>.jsonl --out past-job.json   # a finished job
+node /path/to/acg-autopilot/bin/acg.mjs import ~/.gemini/tmp/<project>/chats/<session>.jsonl --harness gemini --out past-job.json   # a finished Gemini CLI job (organ 6)
 ```
 
 The intent you seal waits as the pending intent and binds to the next job the hook sees, so it is recorded before the
@@ -113,6 +115,7 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 - `src/schema.mjs`: schema v1 field by field, each timeline entry's fields typed by its kind.
 - `src/log.mjs`, `src/normalise.mjs`, `src/transcript.mjs`, `bin/acg.mjs`: capture (organ 2): the hash-chained log, the
   record from the log, a past transcript imported, the command line and the hook.
+- `src/gemini.mjs`: a second harness (organ 6): a finished Gemini CLI session imported as a record.
 - `src/sign.mjs`, `src/bundle.mjs`: signed records (organ 3).
 - `src/keystore.mjs`, `src/trust.mjs`: key care (organ 4): sealed keys, revocation, rotation.
 - `src/portfolio.mjs`: the member's portfolio (organ 5): the judge's attestation, the portfolio of the jobs a member chose, the check an employer runs.
@@ -121,7 +124,7 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
 - `tools/gate.mjs`, `receipts/gate.json`: the gate's own receipt, checked by CI.
 
 Built and measured: organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the
-strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b), key care (organ 4) and the member's portfolio (organ 5); the receipts hold every
+strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b), key care (organ 4), the member's portfolio (organ 5) and a second harness, Gemini CLI, by import (organ 6); the receipts hold every
 result, failures included. Waiting: the bridge into acg-assess (it needs acg-assess's record format). Honest scope: it measures process discipline and evidence, not whether the work is correct; the
 planted-failure suite and the judge share an author, so the independent tests are a red team and a pilot on real guild
 jobs, neither yet run.
