@@ -76,3 +76,12 @@ test('garbage is counted or ignored, never thrown; times and names of the wrong 
   const t = eventsOfGemini(L({ id: 'g', type: 'gemini', timestamp: T('05') }) + '\n' + L({ id: 'h', type: 'user', timestamp: T('09') }));
   assert.equal(t.last, T('09'), 'the latest time in the session, a prompt after the last reply included');
 });
+
+test('organ 6b: nothing to judge when a record holds no model call, or is not a record with a timeline', async () => {
+  const { nothingToJudge } = await import('../src/gemini.mjs');
+  assert.equal(nothingToJudge((await importGemini(SESSION)).record), false);
+  assert.equal(nothingToJudge((await importGemini(L({ id: 'u', type: 'user', timestamp: T('01') }))).record), true, 'a prompt and no reply');
+  assert.equal(nothingToJudge({ timeline: [{ kind: 'tool_use', tool: 'x' }, null, 5] }), true);
+  assert.equal(nothingToJudge({ timeline: [null, { kind: 'model_call' }] }), false);
+  for (const x of [null, undefined, 5, 'x', [], {}, { timeline: 5 }, { timeline: {} }, [{ kind: 'model_call' }]]) assert.equal(nothingToJudge(x), true, JSON.stringify(x));
+});

@@ -90,3 +90,5 @@ jobs:
         run: node tools/measure-5.mjs --check
       - name: organ 6 - synthetic Gemini CLI sessions in the format as found, garbage, and the command line; as the receipt says (H1-H2 need the saved sessions and are local)
         run: node tools/measure-6.mjs --check
+      - name: organ 6b - a job with no model call refused at import, on synthetic sessions whole and cut short and a Claude Code transcript; as the receipt says (I1 is local)
+        run: node tools/measure-6b.mjs --check

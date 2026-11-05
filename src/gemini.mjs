@@ -54,3 +54,8 @@ export async function importGemini(text, opts = {}) {
   const record = toRecord({ job_id: o.job_id || t.sessionId || 'imported', member_id: o.member_id || 'anonymous', harness: { name: 'gemini-cli' }, intent, events: t.events });
   return { record: { ...record, schema: SCHEMA }, counts: t.counts };
 }
+
+// ── organ 6b (claims/organ-6b.json): a record with no model call cannot show an intent sealed before its work, because
+// there is no work for it to come before, so P1 would pass on nothing. The command line refuses to import such a job.
+/** nothingToJudge(record) → true when the record holds no model call (or is not a record with a timeline) */
+export const nothingToJudge = (record) => !(isObj(record) && Array.isArray(record.timeline) && record.timeline.some((e) => isObj(e) && e.kind === 'model_call'));

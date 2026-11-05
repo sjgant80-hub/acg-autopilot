@@ -28,7 +28,7 @@ import { createHash } from 'node:crypto';
 import { link, parseLog, verifyLog, eventsOf, GENESIS } from '../src/log.mjs';
 import { toRecord } from '../src/normalise.mjs';
 import { importTranscript } from '../src/transcript.mjs';
-import { importGemini } from '../src/gemini.mjs';
+import { importGemini, nothingToJudge } from '../src/gemini.mjs';
 import { intentHash, canonical, factsOf, KINDS } from '../src/record.mjs';
 import { assessStrict } from '../src/judge.mjs';
 import { signerFromSeed } from '../src/sign.mjs';
@@ -254,7 +254,9 @@ async function main() {
   if (cmd === 'judge') { const r = o._[1] ? JSON.parse(readFileSync(o._[1], 'utf8')) : await recordOf(currentJob(o)); return console.log(show(assessStrict(r, await factsOf(r)))); }
   if (cmd === 'import') {
     if (o.harness !== undefined && o.harness !== 'gemini' && o.harness !== 'claude-code') throw new Error('acg import --harness claude-code|gemini');
-    const { record, counts } = await (o.harness === 'gemini' ? importGemini : importTranscript)(readFileSync(o._[1], 'utf8')); const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
+    const { record, counts } = await (o.harness === 'gemini' ? importGemini : importTranscript)(readFileSync(o._[1], 'utf8'));
+    if (nothingToJudge(record)) throw new Error('nothing to judge: this ' + (o.harness === 'gemini' ? 'session' : 'transcript') + ' holds no model call, so it cannot show an intent sealed before its work; not imported');
+    const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
   console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle | revoke | rotate | portfolio | check-portfolio — see the top of bin/acg.mjs');
 }
 
