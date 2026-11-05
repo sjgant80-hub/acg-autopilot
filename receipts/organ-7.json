@@ -1,0 +1,79 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": "7",
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-7.json",
+  "commit": "1446531a28ab25c99938a1f3e436596e6c3e5373",
+  "claimsSha256": "d88c942da387c7bd7b16a0f36560b14ee53bb5436ea1a518a6e372194f1beb40"
+ },
+ "facts": {
+  "W1": {
+   "jobs": 50,
+   "withheldFiles": 150,
+   "keptFiles": 150,
+   "looked": 500,
+   "found": 0
+  },
+  "W2": {
+   "jobs": 50,
+   "right": 50
+  },
+  "W3": {
+   "jobs": 50,
+   "right": 50,
+   "markersSought": 150,
+   "markersFound": 150
+  },
+  "W4": {
+   "pairs": 5000,
+   "disagreements": 0,
+   "matched": 2532,
+   "garbage": 2000,
+   "throws": 0
+  },
+  "W5": {
+   "jobs": 10,
+   "right": 10
+  }
+ },
+ "verdicts": [
+  {
+   "id": "W1",
+   "kind": "property",
+   "claim": "Over 50 jobs driven through acg hook with examples/withhold copied into .acg/withhold, each job sealed first and then reading, writing and editing files on and off the list, every file carrying a unique marker: after acg record for each job, no file under .acg holds the marker of any withheld file, the SHA-256 of its bytes, or the SHA-256 of a tool input that named it.",
+   "held": true,
+   "measured": "50 jobs, 150 files withheld and 150 kept: 500 things looked for under .acg (each withheld file’s marker, the SHA-256 of every version of its bytes, the SHA-256 of the tool input that named it), 0 found"
+  },
+  {
+   "id": "W2",
+   "kind": "property",
+   "claim": "In those 50 jobs, each record lists every withheld file as an artifact with stored false and a hash that is not the SHA-256 of its bytes; P7 fails, pointing at exactly the withheld files; P0, the strict schema, passes; and every file not on the list is stored, its copy byte for byte the file.",
+   "held": true,
+   "measured": "records right in 50 of 50 jobs: every withheld file not stored, its hash not its bytes’; P7 failing at exactly those files; P0 passing; every other file stored, its copy byte for byte; the hook quiet"
+  },
+  {
+   "id": "W3",
+   "kind": "property",
+   "claim": "The same 50 jobs with no withhold list: every file is stored, its copy byte for byte the file, with stored true in the record, and the search of W1 finds the marker of every file that W1 withheld, so the search can see what it looks for.",
+   "held": true,
+   "measured": "with no list, every file stored, its copy byte for byte, in 50 of 50 jobs; the search found 150 of the 150 markers W1 withheld"
+  },
+  {
+   "id": "W4",
+   "kind": "property",
+   "claim": "withheld() in src/withhold.mjs agrees with a separately written reference matcher (recursive, character by character, in tools/measure-7.mjs) on 5,000 random pairs of pattern and path drawn from an alphabet that includes the wildcards, slashes, backslashes, dots, mixed case and the characters a regular expression treats as special; and parseWithhold() and withheld() never throw on 2,000 garbage inputs of every type.",
+   "held": true,
+   "measured": "5000 pairs of pattern and path: 0 disagreements with the reference (2532 withheld, the rest kept); 2000 garbage inputs, 0 throws"
+  },
+  {
+   "id": "W5",
+   "kind": "property",
+   "claim": "A withhold list that exists but cannot be read (a folder where the file should be) fails closed: over 10 jobs, the hook keeps no copy of any file and every artifact in the record is not stored, it exits 0 and prints nothing at every event, and errors.log names the withhold list.",
+   "held": true,
+   "measured": "a folder where the list should be: in 10 of 10 jobs no file was copied, every artifact not stored, the hook quiet and exiting 0, and errors.log naming the withhold list"
+  }
+ ],
+ "held": 5,
+ "failed": 0
+}
