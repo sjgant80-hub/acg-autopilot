@@ -1,0 +1,58 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": "6b",
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-6b.json",
+  "commit": "2c6e5e50cc19e910be6fc70f23ae38b05b8f4cd4",
+  "claimsSha256": "27767f20535e620636fcc1eb43efe386fcd8b4ed85fb0ee2308d0e205c101fb8"
+ },
+ "local": "I1: this machine’s saved Gemini CLI sessions, counts only",
+ "facts": {
+  "I1": {
+   "sessions": 3,
+   "withReply": 2,
+   "importedFailingP1": 2,
+   "withoutReply": 1,
+   "refused": 1,
+   "importedPassingP1": 0
+  },
+  "I2": {
+   "inputs": 1000,
+   "nothing": 157,
+   "agree": 1000,
+   "cliTried": 40,
+   "cliRight": 40
+  },
+  "I3": {
+   "noRequestRefused": true,
+   "withRequestImported": true,
+   "withRequestFailsP1": true
+  }
+ },
+ "verdicts": [
+  {
+   "id": "I1",
+   "kind": "property",
+   "claim": "On this machine's saved Gemini CLI sessions, acg import --harness gemini imports every session with a reply, each record failing P1, and refuses every session without one, writing nothing; so no imported real session passes P1.",
+   "held": true,
+   "measured": "3 real sessions: 2 of the 2 with a reply imported, each failing P1; 1 of the 1 without one refused, nothing written; imported records passing P1: 0"
+  },
+  {
+   "id": "I2",
+   "kind": "property",
+   "claim": "Over organ 6's 500 synthetic sessions and the same 500 cut short at a random point, nothingToJudge is true for exactly the records with no model call, and for 40 of them, chosen in turn, acg import refuses exactly those and imports the rest.",
+   "held": true,
+   "measured": "1000 synthetic sessions, whole and cut short: nothing to judge said for exactly those with no model call in 1000 (157 had none); acg import refused or imported as it should in 40 of 40"
+  },
+  {
+   "id": "I3",
+   "kind": "property",
+   "claim": "The same for a Claude Code transcript: one with no assistant request is refused by acg import, writing nothing, and one with a request is imported and fails P1.",
+   "held": true,
+   "measured": "a Claude Code transcript with no assistant request refused, nothing written: yes; one with a request imported: yes, failing P1: yes"
+  }
+ ],
+ "held": 3,
+ "failed": 0
+}

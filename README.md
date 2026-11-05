@@ -25,6 +25,7 @@ node tools/measure-3b.mjs --check     # organ 3b (a false judgement refused)
 node tools/measure-4.mjs --check      # organ 4 (key care)
 node tools/measure-5.mjs --check      # organ 5 (the member's portfolio)
 node tools/measure-6.mjs --check      # organ 6 (Gemini CLI import; the real sessions are local: --local)
+node tools/measure-6b.mjs --check     # organ 6b (a job with no model call is not imported)
 ```
 
 CI also runs witness, the mutation gate, on every kernel in `src/`, and checks the run against `receipts/gate.json`
@@ -56,7 +57,8 @@ node /path/to/acg-autopilot/bin/acg.mjs import ~/.gemini/tmp/<project>/chats/<se
 The intent you seal waits as the pending intent and binds to the next job the hook sees, so it is recorded before the
 first prompt. Every log line carries the hash of the line before it. The hook never blocks Claude Code and never prints:
 an error goes to `.acg/errors.log`. An imported past job sealed no intent, and its record says so ("none sealed"), so it
-fails P1.
+fails P1. Either import refuses a job with no model call (organ 6b): there is nothing to judge, and P1 would pass on
+nothing.
 
 ## Sign a record (organ 3)
 
