@@ -96,8 +96,9 @@ hash, the job, the member's pseudonymous id, the rubric, each check's outcome, t
 as upheld or overturned (never its note), and the recorder's and reviewer's public keys. A portfolio holds only the jobs
 its member names, and the full bundle only for the jobs they reveal; its scores are counts (each check's pass, flag and
 fail; flags upheld, overturned and undecided; for each habit the spec names, the jobs that kept it). Anyone with the
-trust list checks it without the records, and judges each revealed job again. It shows what its member chose: it
-cannot prove nothing was left out, it does not tie the pseudonym to a person, and it shows no change over time, because
+trust list checks it without the records, and judges each revealed job again. Trust only a judge key the member does not hold (the guild's, or your team's): on one
+machine `acg keys` makes all three keys, and a portfolio attested by the member's own judge key proves only what they
+say. It shows what its member chose: it cannot prove nothing was left out, it does not tie the pseudonym to a person, and it shows no change over time, because
 a signature carries no time the member could not also write.
 
 ## How it is built

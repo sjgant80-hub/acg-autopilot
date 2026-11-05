@@ -138,7 +138,8 @@
     <li><b>It does not prove the member showed every job.</b> Leaving a job out is the member’s choice, and a portfolio with jobs left out still checks. It says how many jobs it holds, not how many there were.</li>
     <li><b>It does not prove who the member is.</b> The id is a pseudonym; tying it to a person is for whoever issues it, the guild.</li>
     <li><b>It does not show change over time.</b> A signature carries no time the member could not also write, so a timeline would not be evidence, and none is shown.</li>
-    <li><b>A job not revealed rests on the judge that attested it.</b> Revealing a sample is how an employer checks the judge.</li>
+    <li><b>A job not revealed rests on the judge that attested it.</b> So trust only a judge key the member does not hold: the guild’s, or your own team’s. On one person’s machine, <span class="mono">acg keys</span> makes all three keys, and a portfolio attested by the member’s own judge key proves only what that member says. Revealing a sample is how an employer checks the judge.</li>
+    <li><b>A recorder on the member’s own machine records what it is told.</b> A portfolio proves the records were signed, judged and reviewed as shown, not that each job happened that way; the review, a revealed sample and, in time, the red team are the checks on that.</li>
   </ul>
   <div class="panel">
     <h3>Try it: build a member’s portfolio, then try to dress it up</h3>
@@ -314,7 +315,7 @@
     <div class="panel"><h3>The operations director</h3><p>One process for every agent job, the same eleven checks, versioned. The review queue holds exactly the checks that need a person, and a failure names the entry it rests on. It installs per project, so a pilot is one team and one folder, and widening it is copying a settings file.</p></div>
     <div class="panel"><h3>The technology and security leads</h3><p>It runs where your code runs and sends nothing anywhere. It captures that a prompt was sent, not its text, and a hash of each tool’s input, not the input. Files are kept by hash in the project’s own folder. Signatures are Ed25519 through the platform’s own WebCrypto; the code has no dependencies to vet. See <a href="#security">Security and data protection</a>.</p></div>
     <div class="panel"><h3>The engineering leads and reviewers</h3><p>A review starts from one record: the summary written from the log, each check’s outcome with pointers, the queue of what to decide. A reviewer’s decision on a flag is signed into the same bundle, so the review itself is on the record.</p></div>
-    <div class="panel"><h3>Hiring managers</h3><p>Ask a candidate who runs agents for their portfolio and check it with the trust list of whoever judged it: each job’s outcomes, the reviewer’s decisions, the habits they keep, with a sample revealed and judged again on your own machine. You see how they work, not their clients’ files.</p></div>
+    <div class="panel"><h3>Hiring managers</h3><p>Ask a candidate who runs agents for their portfolio and check it with the trust list of the guild or team that judged it, never a judge key the candidate holds: each job’s outcomes, the reviewer’s decisions, the habits they keep, with a sample revealed and judged again on your own machine. You see how they work, not their clients’ files.</p></div>
     <div class="panel"><h3>Compliance, audit and risk</h3><p>An append-only, hash-chained log; a signed end so a cut or rewrite is refused; a judgement that must re-run byte for byte; the rubric’s version in every judgement; the receipts of every measurement, failures included. Evidence of how AI-assisted work was supervised, kept as files you hold.</p></div>
   </div>
 
@@ -333,7 +334,7 @@
   <h3>Roll-out in a business</h3>
   <ol class="steps">
     <li><b>Pick one project and one team.</b> Copy the hook settings into that project’s <span class="mono">.claude/settings.json</span> and keep <span class="mono">.acg/</span> out of version control.</li>
-    <li><b>Make the keys.</b> <span class="mono">acg keys</span>, with a passphrase in <span class="mono">ACG_PASSPHRASE</span> so each key is sealed, on the recording machine, the judging machine and each reviewer’s; collect the public keys into one trust list that whoever signs off owns. A lost key is revoked on that list, and a role rotated, in one command each.</li>
+    <li><b>Make the keys.</b> <span class="mono">acg keys</span>, with a passphrase in <span class="mono">ACG_PASSPHRASE</span> so each key is sealed, on the recording machine, the judging machine and each reviewer’s; collect the public keys into one trust list that whoever signs off owns. Keep the judge and reviewer keys on machines the people whose work they check do not control, so their signatures mean something to someone else. A lost key is revoked on that list, and a role rotated, in one command each.</li>
     <li><b>Seal, work, claim.</b> Each job starts with <span class="mono">acg seal</span>; the team notes assumptions and claims as they go.</li>
     <li><b>Judge, bundle, review.</b> <span class="mono">acg bundle</span> signs each finished job; a reviewer decides the flags with <span class="mono">acg review</span>; <span class="mono">acg verify-bundle</span> checks any bundle against the trust list.</li>
     <li><b>Measure the pilot.</b> Flags per job, how many a reviewer overturns, minutes a review takes before and after. Those are your numbers for the cost case.</li>
