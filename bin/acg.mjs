@@ -7,6 +7,7 @@
 //            [--tool T] [--refers-to N] [--target ID] [--method M] [--result R] [--job ID]
 //   acg claim --id ID --text "…" [--evidence artifacts:ID,timeline:N,intent:goal,summary] [--criterion "…"] [--job ID]
 //   acg log | record | verify | judge [--job ID]      acg judge <record.json>      acg import <transcript.jsonl> [--out F]
+//   acg import <session.jsonl> --harness gemini [--out F]   a finished Gemini CLI session (organ 6), from ~/.gemini/tmp/*/chats
 //   acg keys                    make this machine's recorder, judge and reviewer keys (private seeds stay in .acg/keys)
 //   acg bundle [--job ID]       the record and its log, signed by the recorder and the judge → jobs/<job>/bundle.json
 //   acg review --check P2 --decision upheld|overturned --note "…" [--job ID]   a reviewer's signed decision on a flag
@@ -27,6 +28,7 @@ import { createHash } from 'node:crypto';
 import { link, parseLog, verifyLog, eventsOf, GENESIS } from '../src/log.mjs';
 import { toRecord } from '../src/normalise.mjs';
 import { importTranscript } from '../src/transcript.mjs';
+import { importGemini } from '../src/gemini.mjs';
 import { intentHash, canonical, factsOf, KINDS } from '../src/record.mjs';
 import { assessStrict } from '../src/judge.mjs';
 import { signerFromSeed } from '../src/sign.mjs';
@@ -250,7 +252,9 @@ async function main() {
   if (cmd === 'portfolio') return console.log(await portfolio(o));
   if (cmd === 'check-portfolio') { const p = JSON.parse(readFileSync(o._[1], 'utf8')), v = await checkPortfolio(p, readTrust(trustPath(o))); console.log(v.ok ? 'the portfolio checks: ' + v.jobs + ' job(s), ' + v.revealed + ' revealed' : 'REFUSED:\n  ' + v.problems.join('\n  ')); process.exitCode = v.ok ? 0 : 2; return; }
   if (cmd === 'judge') { const r = o._[1] ? JSON.parse(readFileSync(o._[1], 'utf8')) : await recordOf(currentJob(o)); return console.log(show(assessStrict(r, await factsOf(r)))); }
-  if (cmd === 'import') { const { record, counts } = await importTranscript(readFileSync(o._[1], 'utf8')); const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
+  if (cmd === 'import') {
+    if (o.harness !== undefined && o.harness !== 'gemini' && o.harness !== 'claude-code') throw new Error('acg import --harness claude-code|gemini');
+    const { record, counts } = await (o.harness === 'gemini' ? importGemini : importTranscript)(readFileSync(o._[1], 'utf8')); const out = typeof o.out === 'string' ? o.out : null; if (out) writeFileSync(out, JSON.stringify(record, null, 1) + '\n'); return console.log((out ? out + ' · ' : '') + counts.requests + ' model requests, ' + counts.toolUses + ' tool uses'); }
   console.log('acg seal | hook | note | claim | log | verify | record | judge | import | keys | bundle | review | verify-bundle | revoke | rotate | portfolio | check-portfolio — see the top of bin/acg.mjs');
 }
 
