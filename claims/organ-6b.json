@@ -1,0 +1,14 @@
+{
+ "kind": "acg-autopilot.claims",
+ "organ": "6b",
+ "v": 1,
+ "sealed": "Written and committed after organ 6's H2 failed and before nothingToJudge, the command line's refusal or tools/measure-6b.mjs existed. Disclosed: H2's receipt already says which real session has no reply (one of the three); I1 is measured on those same three sessions, so its outcome for them is foreseen, and the claim is that the fix does what it says on them. tools/measure-6b.mjs refuses to run if this file differs from the commit that sealed it. A claim that fails is kept.",
+ "what": "Organ 6b, the answer to H2. A job whose record holds no model call cannot show an intent sealed before its work, because there is no work for the intent to come before, so P1 passes on nothing. src/gemini.mjs gains nothingToJudge(record): true when the record's timeline holds no model call (and for anything that is not a record with a timeline). acg import, for either harness, refuses such a job: it says there is nothing to judge, writes no record and exits 1. importGemini and importTranscript are unchanged, so organs 2 and 6 still reproduce.",
+ "seenBefore": "Organ 6's receipt: 3 real sessions, P1 failed on 2.",
+ "scope": "The refusal is at the command line, and nothingToJudge is there for any other caller; importing straight through importGemini or importTranscript still gives the record, as organs 2 and 6 measured it.",
+ "claims": [
+  { "id": "I1", "kind": "property", "claim": "On this machine's saved Gemini CLI sessions, acg import --harness gemini imports every session with a reply, each record failing P1, and refuses every session without one, writing nothing; so no imported real session passes P1.", "bar": { "rate": 1 } },
+  { "id": "I2", "kind": "property", "claim": "Over organ 6's 500 synthetic sessions and the same 500 cut short at a random point, nothingToJudge is true for exactly the records with no model call, and for 40 of them, chosen in turn, acg import refuses exactly those and imports the rest.", "bar": { "rate": 1 } },
+  { "id": "I3", "kind": "property", "claim": "The same for a Claude Code transcript: one with no assistant request is refused by acg import, writing nothing, and one with a request is imported and fails P1.", "bar": { "rate": 1 } }
+ ]
+}
