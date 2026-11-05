@@ -1,0 +1,130 @@
+{
+ "kind": "acg-autopilot.receipt",
+ "organ": 5,
+ "v": 1,
+ "sealed": {
+  "path": "claims/organ-5.json",
+  "commit": "9b743137a00406b1778cf9466c645ffbd3a9c25a",
+  "claimsSha256": "789f075b6a67da092b3785f229645974dd3cfc10b6cf1fe66eab63db7cb7fafc"
+ },
+ "demoSeeds": "public demonstration keys (0x11 recorder, 0x22 judge, 0x33 reviewer, 0x44 on no trust list), never real ones; L7 makes fresh keys and reports only what does not depend on them",
+ "facts": {
+  "L1": {
+   "portfolios": 10,
+   "jobs": 1000,
+   "checked": 10,
+   "numbersCompared": 460,
+   "mismatches": 0
+  },
+  "L2": {
+   "members": 10,
+   "exact": 10,
+   "otherLeft": 9000,
+   "notChosenLeft": 500,
+   "tamperedTried": 400,
+   "tamperedRefused": 400,
+   "reasonsRight": 400,
+   "otherReasons": 0,
+   "checked": 10
+  },
+  "L3": {
+   "jobs": 100,
+   "markers": 2195,
+   "foundNotRevealed": 0,
+   "foundRevealed": 2195,
+   "checked": 1
+  },
+  "L4": {
+   "tried": 170,
+   "refused": 170,
+   "reasonsRight": 170,
+   "judgeRevokedRefused": 10,
+   "judgeRevokedNamed": 10,
+   "recorderRevokedRefused": 10,
+   "dropAccepted": 10
+  },
+  "L5": {
+   "portfolios": 10,
+   "checked": 10,
+   "revealed": 100,
+   "verified": 100,
+   "judgedSame": 100,
+   "swapsTried": 100,
+   "swapsRefused": 100,
+   "cutsTried": 100,
+   "cutsRefused": 100
+  },
+  "L6": {
+   "damaged": 2000,
+   "damagedRefused": 2000,
+   "garbage": 200,
+   "garbageRefused": 200,
+   "threw": 0,
+   "builderInputs": 2000,
+   "builderThrew": 0,
+   "entered": 0
+  },
+  "L7": {
+   "built": true,
+   "onlyIncluded": true,
+   "revealed": true,
+   "includeAll": true,
+   "accepted": true,
+   "tamperedRefused": true,
+   "noPassphraseRefused": true
+  }
+ },
+ "verdicts": [
+  {
+   "id": "L1",
+   "kind": "property",
+   "claim": "The scores are the judgements: for each of the 10 members, a portfolio of all 100 of their jobs passes the check, and every number in its scores (each check's pass, flag and fail; flags upheld, overturned and undecided; the jobs fully reviewed; each habit kept) equals the number got by judging each of those records again directly and counting the reviewer's decisions, worked out separately from the portfolio's own code.",
+   "held": true,
+   "measured": "10 portfolios of 1000 jobs, 10 passed the check; 460 numbers compared with judging each record again, 0 differed"
+  },
+  {
+   "id": "L2",
+   "kind": "property",
+   "claim": "Only what the member chose, only what verifies: for each member, given all 1,000 bundles and, ahead of them, 4 tampered copies of 10 of the 50 jobs they chose (the log's last line cut, the record changed after signing, a judgement the judge's key signed that is not what judging gives, the bundle re-signed with a key on no trust list), the portfolio holds exactly the 50 chosen jobs; the 900 other members' bundles are left out as another member's, the 50 not chosen as not chosen, and each of the 40 tampered copies is refused with its reason and counted nowhere.",
+   "held": true,
+   "measured": "of 10 members: 10 portfolios held exactly the 50 chosen jobs (10 passed the check); left out: 9000 as another member’s, 500 as not chosen; tampered copies refused: 400 of 400 (400 with the reason expected); any other outcome: 0"
+  },
+  {
+   "id": "L3",
+   "kind": "property",
+   "claim": "A shared portfolio carries no client text: for 100 jobs re-made with a unique marker in the goal, every constraint, success criterion and out-of-scope item, every timeline text and method, every tool name, every claim text, every artifact id and every reviewer note, the entries not revealed contain none of the markers; revealed, the same jobs show every marker, so the search can find them.",
+   "held": true,
+   "measured": "2195 markers in 100 jobs: found in the entries not revealed 0, found once revealed 2195; both portfolios passed the check: yes"
+  },
+  {
+   "id": "L4",
+   "kind": "property",
+   "claim": "It cannot be changed unseen: on each of the 10 portfolios, each of these edits, made at 3 different entries with the scores worked out again to match, is refused: an outcome changed, a reviewer's decision changed, an entry duplicated, an entry lifted from another member's portfolio, an entry attested afresh by a key on no trust list; and, once each, a score changed and the member renamed. Revoking the judge's key refuses every portfolio and names the revocation; revoking the recorder's key refuses every portfolio. Leaving 10 entries out, with the scores worked out again, is accepted: a portfolio shows what its member chose.",
+   "held": true,
+   "measured": "170 of 170 edits refused (170 with the reason expected); judge’s key revoked: 10 of 10 refused, 10 naming the revocation on every entry; recorder’s key revoked: 10 refused; 10 entries left out, scores worked out again: 10 of 10 accepted"
+  },
+  {
+   "id": "L5",
+   "kind": "property",
+   "claim": "A revealed job re-runs: on each portfolio, 10 entries revealed with their full bundles pass the check, each bundle verifying and judged again to the outcomes attested; putting another of the member's bundles in place of a revealed one is refused, and so is a revealed bundle with its log's last line cut (10 of each per portfolio).",
+   "held": true,
+   "measured": "10 of 10 portfolios with revealed jobs passed the check; 100 revealed, 100 verified, 100 judged again to the outcomes attested; another bundle in place refused 100 of 100, a cut log refused 100 of 100"
+  },
+  {
+   "id": "L6",
+   "kind": "property",
+   "claim": "Total: 2,000 portfolios each with one value, anywhere in it (its revealed bundles included), replaced by a value of another type, and 200 other garbage values, are each refused by the check, which never throws; 2,000 garbage values and damaged bundles given to the builder never make it throw and none enters a portfolio.",
+   "held": true,
+   "measured": "damaged portfolios refused 2000 of 2000, other garbage refused 200 of 200, the check threw 0 times; the builder took 2000 garbage values and damaged bundles, threw 0 times, and 0 entered a portfolio"
+  },
+  {
+   "id": "L7",
+   "kind": "property",
+   "claim": "The command line: acg portfolio builds a member's portfolio from the bundles in its folder, of only the jobs named with --include (or all of that member's with --include all), attested with the judge's key (opened with the passphrase when it is sealed), revealing the jobs named with --reveal; a job not included is not in it; acg check-portfolio accepts it against the trust list, and refuses, with exit code 2, a copy with one outcome changed.",
+   "held": true,
+   "measured": "built from the folder with only the job included: yes, revealed as asked: yes, --include all: yes; check-portfolio accepted it: yes, refused a changed outcome with exit code 2: yes; the sealed judge key without its passphrase refused, nothing written: yes"
+  }
+ ],
+ "held": 7,
+ "failed": 0
+}

@@ -11,6 +11,8 @@ import { link, GENESIS, eventsOf, verifyLog } from '../src/log.mjs';
 import { toRecord } from '../src/normalise.mjs';
 import { sha256hex, canonical } from '../src/record.mjs';
 import { reviewCase, sourcesOf, DEFAULTS } from '../src/reviewcase.mjs';
+import { attest, buildPortfolio, checkPortfolio, scoresOf, HABITS } from '../src/portfolio.mjs';
+import { revoke } from '../src/trust.mjs';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -44,7 +46,7 @@ async function go() {
 }
 
 // ── the receipts: the Measured panels, the header line, the white paper's result, every bound number in the prose ─────
-const RECEIPTS = ['1', '1b', '1c', '2', '3', '3b', '4'];
+const RECEIPTS = ['1', '1b', '1c', '2', '3', '3b', '4', '5'];
 const at = (o, path) => path.split('.').reduce((x, k) => (x && typeof x === 'object' ? x[k] : undefined), o);
 async function receipts() {
   const got = await Promise.all(RECEIPTS.map((o) => get('receipts/organ-' + o + '.json')));
@@ -104,7 +106,9 @@ async function trace() {
     const decisions = a.review.map((c) => ({ check: c, decision: 'upheld', note: 'seen by the demonstration reviewer' }));
     const bundle = await makeBundle({ record, log, recorder: k.R, judge: k.J, reviewer: k.V, decisions });
     const ok = await verifyBundle(bundle, { recorders: [k.R.publicHex], judges: [k.J.publicHex], reviewers: [k.V.publicHex] });
-    const flagged = a.results.filter((x) => x.outcome !== 'pass');
+    const flagged = a.results.filter((x) => x.outcome !== 'pass'), trust = { recorders: [k.R.publicHex], judges: [k.J.publicHex], reviewers: [k.V.publicHex] };
+    const pv = { att: await attest(bundle, trust, k.J) };
+    pv.check = await checkPortfolio((await buildPortfolio({ member: record.member_id, bundles: [bundle], trust, judge: k.J, include: [record.job_id], reveal: [record.job_id] })).portfolio, trust);
     $('trace').innerHTML = [
       '<b>Seal.</b> The goal “' + esc(job.intent.goal) + '”, sealed at ' + esc(job.intent.sealed_at) + ', hash ' + short(job.intent.hash) + ' — it matches its content: ' + (facts.intentHashOk ? 'yes' : 'no') + '.',
       '<b>Record.</b> ' + log.length + ' log lines, each hashing the one before; the last is ' + short(v.head) + '; the chain verifies: ' + (v.ok ? 'yes' : 'no') + '.',
@@ -113,11 +117,47 @@ async function trace() {
       '<b>A person decides.</b> The review queue: ' + (a.review.length ? esc(a.review.join(', ')) : 'empty') + '. ' + (decisions.length ? 'The demonstration reviewer upheld ' + (decisions.length === 1 ? 'it' : 'them') + ', with a note.' : 'Nothing to decide.'),
       '<b>Sign.</b> Recorder ' + short(bundle.recorded.by) + ' signed the record ' + short(bundle.recorded.payload.record) + ' and that its log ends at line ' + bundle.recorded.payload.log.length + '; judge ' + short(bundle.judged.by) + ' signed the judgement ' + short(bundle.judged.payload.judgement) + '; reviewer ' + short(bundle.reviewed.by) + ' signed ' + decisions.length + ' decision' + (decisions.length === 1 ? '' : 's') + '.',
       '<b>Verify.</b> Against the trust list: <span class="tag ' + (ok.ok ? 'pass' : 'fail') + '">' + (ok.ok ? 'VERIFIES' : 'REFUSED') + '</span>' + (ok.ok ? '' : ' ' + ok.problems.map(esc).join('; ')),
+      '<b>Portfolio.</b> The judge checked the whole bundle and attested ' + (pv.att.ok ? 'only its outcomes and decisions (' + pv.att.attested.payload.review.length + ' flagged, ' + pv.att.attested.payload.decisions.length + ' decided)' : 'nothing: ' + esc(pv.att.problems.join('; '))) + '; in a one-job portfolio, revealed, an employer’s check: <span class="tag ' + (pv.check.ok ? 'pass' : 'fail') + '">' + (pv.check.ok ? 'VERIFIES' : 'REFUSED') + '</span>' + (pv.check.ok ? '' : ' ' + pv.check.problems.map(esc).join('; ')),
       '<span class="dim"><b>Into acg-assess.</b> Waits on its record format.</span>',
-      '<span class="dim"><b>Portfolio.</b> After the bridge.</span>',
     ].map((x) => '<li>' + x + '</li>').join('');
   } catch (e) { $('trace').innerHTML = '<li>' + noCrypto(e) + '</li>'; }
 }
+
+// ── a member's portfolio, in the browser: demonstration keys; the member chooses, the judge attests, an employer checks ─
+let PF = null;
+const PF_JOBS = [null, 'P2', null, 'P3', 'P4', null, 'P10', 'P9'];
+async function signedJob(job, member, decision) {
+  const k = await demoKeys(), log = await chainOf(eventsOfJob(job)), record = toRecord({ job_id: job.job_id, member_id: member, harness: job.harness, intent: job.intent, events: eventsOf(log) });
+  const review = assessStrict(record, await factsOf(record)).review;
+  return makeBundle({ record, log, recorder: k.R, judge: k.J, reviewer: k.V, decisions: review.map((c) => ({ check: c, decision, note: 'seen by the demonstration reviewer' })) });
+}
+const LABEL = { pass: 'pass', flag: 'flag', fail: 'fail' };
+function pfShow(p, v) {
+  const s = p.scores, n = s.jobs;
+  return '<p><b>' + esc(p.member) + '</b> chose ' + n + ' of the ' + PF_JOBS.length + ' jobs to show, and revealed ' + s.revealed + ' in full. Flags: ' + s.flags.upheld + ' upheld, ' + s.flags.overturned + ' overturned by the reviewer, ' + s.flags.undecided + ' waiting.</p>'
+    + '<div class="tw"><table><thead><tr><th>Habit</th><th>Check</th><th>Jobs that kept it</th></tr></thead><tbody>'
+    + Object.entries(HABITS).map(([c, h]) => '<tr><td>' + esc(h) + '</td><td>' + esc(c) + '</td><td>' + s.habits[c] + ' of ' + n + '</td></tr>').join('') + '</tbody></table></div>'
+    + '<p class="dim">Each job, as an employer sees it unless revealed: ' + p.entries.map((e) => esc(e.attested.payload.job_id) + ' ' + (Object.entries(e.attested.payload.outcomes).filter(([, o]) => o !== 'pass').map(([c, o]) => esc(c) + ' ' + LABEL[o]).join(', ') || 'all pass')).join(' · ') + '.</p>'
+    + say('An employer checks it with the trust list: ' + v.jobs + ' jobs, ' + v.revealed + ' revealed and judged again', v);
+}
+async function pfMake() {
+  try {
+    const k = await demoKeys(), trust = { recorders: [k.R.publicHex], judges: [k.J.publicHex], reviewers: [k.V.publicHex] }, bundles = [];
+    for (const [i, kind] of PF_JOBS.entries()) bundles.push(await signedJob(kind ? (await plantedJob(52000 + i, kind)).job : await cleanJob(52000 + i), 'member-demo', i % 3 ? 'upheld' : 'overturned'));
+    const ids = bundles.map((b) => b.record.job_id), { portfolio } = await buildPortfolio({ member: 'member-demo', bundles, trust, judge: k.J, include: ids.slice(0, -1), reveal: ids.slice(0, 2) });
+    const other = (await attest(await signedJob(await cleanJob(53000), 'member-other', 'upheld'), trust, k.J)).attested;
+    PF = { portfolio, trust, other };
+    $('pf-out').innerHTML = pfShow(portfolio, await checkPortfolio(portfolio, trust));
+  } catch (e) { $('pf-out').innerHTML = noCrypto(e); }
+}
+async function pfTamper(title, change, trustOf = (t) => t) {
+  if (!PF) await pfMake();
+  if (!PF) return;
+  const p = structuredClone(PF.portfolio);
+  await change(p);
+  $('pf-out').innerHTML += say(title, await checkPortfolio(p, trustOf(PF.trust)));
+}
+const rescored = (p) => { p.scores = scoresOf(p.entries); return p; };
 
 // ── the cost case: the kernel over the sourced basis, with the reader's inputs ───────────────────────────────────────
 const INPUTS = { 'c-jobs': 'jobsPerWeek', 'c-min': 'minutesPerJob', 'c-share': 'share', 'c-tin': 'tokensIn', 'c-tout': 'tokensOut', 'c-years': 'years' };
@@ -149,6 +189,11 @@ $('sg-cut').addEventListener('click', () => tamper('The same bundle, its last lo
 $('sg-rewrite').addEventListener('click', () => tamper('The log rewritten from scratch with fresh hashes, one entry changed', async (b) => { const ev = eventsOf(b.log); ev[1] = { ...ev[1], at: '2000-01-01T00:00:00.000Z' }; b.log = await chainOf(ev); return b; }));
 $('sg-lie').addEventListener('click', () => tamper('The judge’s key signing a judgement with one check changed', async (b) => { const k = await demoKeys(), j = JSON.parse(JSON.stringify(b.judged.payload)); j.judgement = await sha256hex(canonical({ forged: true })); b.judged = await signAs(k.J, 'judged', j); return b; }));
 $('sg-forger').addEventListener('click', () => tamper('The whole bundle re-signed with a key not on the trust list', async (b) => { const k = await demoKeys(); return makeBundle({ record: b.record, log: b.log, recorder: k.X, judge: k.X }); }));
+$('pf-make').addEventListener('click', pfMake);
+$('pf-flip').addEventListener('click', () => pfTamper('One job’s fail changed to a pass, and the scores worked out again to match', (p) => { const e = p.entries.find((x) => Object.values(x.attested.payload.outcomes).includes('fail')); const c = Object.keys(e.attested.payload.outcomes).find((k) => e.attested.payload.outcomes[k] === 'fail'); e.attested.payload.outcomes[c] = 'pass'; rescored(p); }));
+$('pf-lift').addEventListener('click', () => pfTamper('Another member’s clean job added, its own attestation intact, the scores worked out again', (p) => { p.entries.push({ attested: structuredClone(PF.other) }); rescored(p); }));
+$('pf-swap').addEventListener('click', () => pfTamper('A revealed job’s bundle swapped for the other revealed job’s', (p) => { const r = p.entries.filter((x) => x.bundle !== undefined); [r[0].bundle, r[1].bundle] = [r[1].bundle, r[0].bundle]; }));
+$('pf-revoke').addEventListener('click', () => pfTamper('The same portfolio, after the judge’s key is revoked as stolen', () => {}, (t) => revoke(t, t.judges[0], 'stolen', new Date().toISOString())));
 $('tr-run').addEventListener('click', trace);
 $('tr-next').addEventListener('click', () => { TSEED++; trace(); });
 $('go').addEventListener('click', go);

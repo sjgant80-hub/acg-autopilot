@@ -16,16 +16,16 @@
   <p class="dim">Built to feed the AI Craftspeople Guild’s process-review tool, acg-assess (Alex’s design). Its rubric governs; the checks here are a proposal to align with it. Any team that runs AI agents can use it on its own work: see <a href="#business">For a business</a>. <span id="hdr-sum"></span></p>
 </header>
 <nav>
-  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#record">Record a job</a><a href="#signed">Signed records</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#business">For a business</a><a href="#cost">Cost case</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
+  <a href="#what">What it is</a><a href="#start">Start here</a><a href="#try">Try it</a><a href="#record">Record a job</a><a href="#signed">Signed records</a><a href="#portfolio">Portfolio</a><a href="#how">How it works</a><a href="#checks">The checks</a><a href="#measured">Measured</a><a href="#blueprint">Blueprint</a><a href="#adopt">For the guild</a><a href="#business">For a business</a><a href="#cost">Cost case</a><a href="#paper">White paper</a><a href="#faq">Questions</a>
 </nav>
 
 <section id="what">
   <h2><small>What it is</small>A process review that runs itself, and hands people the hard calls</h2>
   <p>When an agent works for hours, the danger is rarely the code. It is the process: a goal that drifted, a tool nobody approved, an assumption made quietly halfway through, a confident report that the work “passes” when nothing checked it. A person reviewing that afterwards has to reconstruct it from memory and chat logs, and the agent’s own summary of what it did is the least reliable source of all.</p>
   <p>The Autopilot works from a <b>process record</b>: the goal and limits written down and hashed before the first model call, then every call, tool use, assumption, question, answer, artifact and final claim, in order. A judge, separate code that never asks the agent anything, runs eleven checks over that record (P0 to P10). Each check says pass, flag or fail, why, and points at the exact entries it rests on. Checks that are a matter of judgement (hidden assumptions, overclaiming, plain language, how well the person directed the agent) can only flag: a person decides them.</p>
-  <p>It has four working parts today. A <b>recorder</b> on Claude Code’s own hooks writes the record as the job runs. The <b>judge</b> checks it. And a <b>signed bundle</b> carries the record, its log and the signatures of whoever recorded, judged and reviewed it, so anyone can check that nothing was changed, cut short or dressed up afterwards. And <b>key care</b> keeps those keys sealed under a passphrase and lets a lost one be revoked.</p>
+  <p>It has five working parts today. A <b>recorder</b> on Claude Code’s own hooks writes the record as the job runs. The <b>judge</b> checks it. A <b>signed bundle</b> carries the record, its log and the signatures of whoever recorded, judged and reviewed it, so anyone can check that nothing was changed, cut short or dressed up afterwards. <b>Key care</b> keeps those keys sealed under a passphrase and lets a lost one be revoked. And a member’s <b>portfolio</b> gathers the jobs they choose to show, each attested by the judge, so an employer can check how someone works without reading a single client file.</p>
   <p><b>How it is built.</b> In parts we call organs. For each, the claims it must meet are written down and committed before its code exists; the code is then tested, and its tests are themselves tested by a mutation gate (every small deliberate fault in the code must be caught, or the build fails); a seeded suite of jobs measures the claims; the result is kept, failures included, and re-run by CI on every change.</p>
-  <p>The reviewed records add up, with the member’s consent, to a <b>portfolio</b> that shows how someone works, which an employer can check instead of trusting a CV.</p>
+  <p>The reviewed records add up, with the member’s consent, to a <b>portfolio</b> that shows how someone works, which an employer can check instead of trusting a CV: see <a href="#portfolio">Portfolio</a>.</p>
 </section>
 
 <section id="start">
@@ -35,6 +35,7 @@
     <li><b>Judge it.</b> Your browser runs the same judge the tests and the mutation gate check. Nothing is sent anywhere.</li>
     <li><b>Read the results.</b> Each check shows pass, flag or fail, the reason, and the entries it points to. Flags are listed as the review queue: what a person must decide.</li>
     <li><b>Sign one and tamper with it</b> in <a href="#signed">Signed records</a>: cut the log, rewrite it, forge the judgement. Each is refused, with its reason.</li>
+    <li><b>Build a member’s portfolio</b> in <a href="#portfolio">Portfolio</a>, check it as an employer would, then try to dress it up: change a fail to a pass, slip in another member’s job, swap a revealed job. Each is refused.</li>
     <li><b>Trace a whole run</b> in <a href="#how">How it works</a>: the browser runs every stage on a real sample job and shows what each one produced.</li>
     <li><b>Work out what it saves you</b> in <a href="#cost">Cost case</a>, with your own numbers.</li>
     <li><b>Check the receipts</b> in <a href="#measured">Measured</a>: the claims written down before each part was built, and what happened. To record your own jobs, follow <a href="#record">Record a job</a>.</li>
@@ -117,13 +118,50 @@
   <p class="dim">From the command line: <span class="mono">acg keys</span> makes this machine’s three keys (the private seeds stay in <span class="mono">.acg/keys</span>), <span class="mono">acg bundle</span> signs a job, <span class="mono">acg review --check P2 --decision upheld --note "…"</span> adds a reviewer’s decision, <span class="mono">acg verify-bundle</span> checks one.</p>
 </section>
 
+<section id="portfolio">
+  <h2><small>Portfolio</small>How a member works, shown to an employer who can check it</h2>
+  <p>A member’s reviewed jobs add up to a <b>portfolio</b>: evidence of how they direct an agent, which an employer can check instead of trusting a CV or a recruiter. The member decides what is in it. Nothing is included unless they name it, and the full record of a job goes in only if they choose to reveal it. Every other job is shown as an <b>attestation</b>: the judge, after checking the whole signed bundle, signs only what a portfolio needs, and nothing a client would mind being shown.</p>
+  <ol class="steps">
+    <li><b>The judge attests each job.</b> It checks the bundle in full (every signature against the trust list and its revocations, where the log ends, the judgement judged again, the reviewer’s decisions) and then signs, for that record’s hash: the job’s id, the member’s pseudonymous id, the rubric, each check’s outcome, the review queue, each reviewer decision as upheld or overturned, and the recorder’s and reviewer’s public keys.</li>
+    <li><b>The member chooses.</b> <span class="mono">acg portfolio --member … --include …</span> takes only the jobs named (or <span class="mono">all</span> of theirs), and <span class="mono">--reveal …</span> adds the full bundle for the jobs they are willing to show in full. A job of another member, a job not named, or a bundle that does not check is left out.</li>
+    <li><b>The scores are counts.</b> For each check, how many jobs passed, flagged or failed; how many flags a reviewer upheld or overturned, and how many still wait; and, for the habits that matter (intent sealed first, only allowed tools, claims backed, numbers traceable, a check by someone other than the agent, the person’s direction, a re-run that reproduced), how many jobs kept each one. A flag a reviewer overturned counts as kept.</li>
+    <li><b>An employer checks it</b> with the trust list: <span class="mono">acg check-portfolio portfolio.json</span>. Each attestation must be by a judge they trust, about this member, its recorder and reviewer still trusted, no job twice, and the scores exactly what the entries give. Each revealed job is checked in full and judged again, and must come out as attested. To test the judge itself, an employer asks the member to reveal a sample.</li>
+  </ol>
+  <h3>What an employer sees, and what stays private</h3>
+  <ul>
+    <li><b>Sees:</b> for each job, its id, each check’s outcome and the reviewer’s decisions; the counts above; and, for a revealed job, the whole bundle.</li>
+    <li><b>Does not see</b>, for a job not revealed: the goal, the constraints, the success criteria, any note, question or answer, any claim, any tool’s name, any file’s name or contents, or a reviewer’s note. Measured: <span data-r="5:facts.L3.markers">…</span> unique markers planted in those fields of <span data-r="5:facts.L3.jobs">…</span> jobs; found in the shared portfolio: <span data-r="5:facts.L3.foundNotRevealed">…</span>; found once the same jobs were revealed: <span data-r="5:facts.L3.foundRevealed">…</span>, so the search could find them.</li>
+  </ul>
+  <h3>What it proves, and what it does not</h3>
+  <ul>
+    <li><b>It proves</b> that every job shown was recorded, judged and reviewed as shown, by keys the employer trusts, for this member, and that the scores are what those jobs give. Measured on <span data-r="5:facts.L1.jobs">…</span> jobs shared among <span data-r="5:facts.L1.portfolios">…</span> members: <span data-r="5:facts.L1.numbersCompared">…</span> numbers compared with judging each record again, <span data-r="5:facts.L1.mismatches">…</span> differed; <span data-r="5:facts.L4.refused">…</span> of <span data-r="5:facts.L4.tried">…</span> edits to a shared portfolio refused; <span data-r="5:facts.L5.swapsRefused">…</span> of <span data-r="5:facts.L5.swapsTried">…</span> revealed jobs swapped for another refused.</li>
+    <li><b>It does not prove the member showed every job.</b> Leaving a job out is the member’s choice, and a portfolio with jobs left out still checks. It says how many jobs it holds, not how many there were.</li>
+    <li><b>It does not prove who the member is.</b> The id is a pseudonym; tying it to a person is for whoever issues it, the guild.</li>
+    <li><b>It does not show change over time.</b> A signature carries no time the member could not also write, so a timeline would not be evidence, and none is shown.</li>
+    <li><b>A job not revealed rests on the judge that attested it.</b> Revealing a sample is how an employer checks the judge.</li>
+  </ul>
+  <div class="panel">
+    <h3>Try it: build a member’s portfolio, then try to dress it up</h3>
+    <p class="dim">Your browser signs a few sample jobs with the public demonstration keys, has the judge attest them, and builds the portfolio of the jobs a sample member chose, two of them revealed. Then it checks it as an employer would. Each button changes a copy and checks again.</p>
+    <div class="row">
+      <button id="pf-make" type="button" class="primary">Build a sample portfolio</button>
+      <button id="pf-flip" type="button">Change a fail to a pass</button>
+      <button id="pf-lift" type="button">Add another member’s job</button>
+      <button id="pf-swap" type="button">Swap a revealed job</button>
+      <button id="pf-revoke" type="button">Revoke the judge’s key</button>
+    </div>
+    <div id="pf-out" role="status" aria-live="polite"></div>
+  </div>
+  <p class="dim">From the command line: <span class="mono">acg portfolio --member ana --include all --reveal &lt;job&gt;</span> builds one from the bundles in the project’s <span class="mono">.acg</span> folder, attested with this machine’s judge key; <span class="mono">acg check-portfolio portfolio.json --trust trust.json</span> checks one.</p>
+</section>
+
 <section id="how">
   <h2><small>How it works</small>From a job to a signed, reviewed record</h2>
   <div class="grid two">
     <div class="diagram">
       <svg viewBox="0 0 420 690" role="img" aria-labelledby="dg-t dg-d">
         <title id="dg-t">The flow, as the code runs it</title>
-        <desc id="dg-d">One: acg seal hashes the intent before work. Two: the hook appends every prompt, tool use and file to a hash-chained log. Three: the normaliser turns the log into the process record. Four: the judge runs P0 to P10. Five: flags go to the review queue and a person decides. Six: the recorder, judge and reviewer sign the bundle, with keys sealed under a passphrase. Seven: anyone with the trust list verifies it, refusing revoked keys. Eight: the bridge into acg-assess waits on its record format. Nine: the member portfolio comes after the bridge. Stages one to seven are built and measured.</desc>
+        <desc id="dg-d">One: acg seal hashes the intent before work. Two: the hook appends every prompt, tool use and file to a hash-chained log. Three: the normaliser turns the log into the process record. Four: the judge runs P0 to P10. Five: flags go to the review queue and a person decides. Six: the recorder, judge and reviewer sign the bundle, with keys sealed under a passphrase. Seven: anyone with the trust list verifies it, refusing revoked keys. Eight: the judge attests the jobs a member chooses, and they make a portfolio anyone with the trust list checks without seeing the records. Nine: the bridge into acg-assess waits on its record format. Stages one to eight are built and measured.</desc>
         <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="arrow"/></marker></defs>
         <rect x="10" y="10" width="400" height="58" rx="8" class="on"/><text x="24" y="34">1 · seal the intent</text><text x="24" y="54" class="d">acg seal: goal, limits, tools; hashed before work</text>
         <path d="M210 68 V84" marker-end="url(#ar)"/>
@@ -139,9 +177,9 @@
         <path d="M210 448 V464" marker-end="url(#ar)"/>
         <rect x="10" y="466" width="400" height="58" rx="8" class="on"/><text x="24" y="490">7 · anyone verifies</text><text x="24" y="510" class="d">trust list and revocations, log end, judgement re-run</text>
         <path d="M210 524 V540" marker-end="url(#ar)"/>
-        <rect x="10" y="542" width="400" height="58" rx="8" class="wait"/><text x="24" y="566">8 · into acg-assess</text><text x="24" y="586" class="d">waits on acg-assess’s record format</text>
+        <rect x="10" y="542" width="400" height="58" rx="8" class="on"/><text x="24" y="566">8 · a portfolio, with consent</text><text x="24" y="586" class="d">chosen jobs, attested; checked without the records</text>
         <path d="M210 600 V616" marker-end="url(#ar)"/>
-        <rect x="10" y="618" width="400" height="58" rx="8" class="wait"/><text x="24" y="642">9 · portfolio, with consent</text><text x="24" y="662" class="d">after the bridge</text>
+        <rect x="10" y="618" width="400" height="58" rx="8" class="wait"/><text x="24" y="642">9 · into acg-assess</text><text x="24" y="662" class="d">waits on acg-assess’s record format</text>
       </svg>
       <p class="dim">Solid: built and measured. Dashed: waiting, and why.</p>
     </div>
@@ -217,6 +255,10 @@
       <tr><td class="mono">src/trust.mjs</td><td>A trust list that revokes: the keys it still trusts, revoke, rotate, and checking a bundle so a revoked signer is named as revoked.</td><td class="mono">test/keys.test.mjs</td><td data-gate="src/trust.mjs">…</td></tr>
       <tr><td class="mono">bin/acg.mjs: keys · revoke · rotate</td><td>Sealed keys from the command line, signing only with the passphrase, sealing old plain keys.</td><td>end to end in temporary folders, in test/keys-cli.test.mjs</td><td>tested, not mutation-gated (a command line)</td></tr>
       <tr><td class="mono">tools/measure-4.mjs</td><td>Sealed keys, wrong passphrases and changed files, revocation and rotation over <span data-r="4:facts.K3.bundles">…</span> signed bundles, the command line.</td><td>CI re-runs it</td><td>measurement</td></tr>
+      <tr class="organ"><td colspan="4">Organ 5 · the member’s portfolio</td></tr>
+      <tr><td class="mono">src/portfolio.mjs</td><td>The judge’s attestation of a whole bundle (only what a portfolio shows), the portfolio of the jobs a member chose, its scores as counts, and the check an employer runs, each revealed job judged again.</td><td class="mono">test/portfolio.test.mjs</td><td data-gate="src/portfolio.mjs">…</td></tr>
+      <tr><td class="mono">bin/acg.mjs: portfolio · check-portfolio</td><td>A portfolio from the project’s bundles, of the jobs named, attested with the judge’s key; the check, refusing with exit code two.</td><td>end to end in a temporary folder, in test/portfolio-cli.test.mjs</td><td>tested, not mutation-gated (a command line)</td></tr>
+      <tr><td class="mono">tools/measure-5.mjs</td><td><span data-r="5:facts.L1.jobs">…</span> signed jobs shared among members: chosen, tampered, marked, revealed, swapped and damaged; the command line.</td><td>CI re-runs it</td><td>measurement</td></tr>
       <tr class="organ"><td colspan="4">The cost case and the page</td></tr>
       <tr><td class="mono">src/reviewcase.mjs · data/basis.json</td><td>The cost case below: every external figure read from the sourced basis, the inputs the reader’s own.</td><td class="mono">test/reviewcase.test.mjs</td><td data-gate="src/reviewcase.mjs">…</td></tr>
       <tr><td class="mono">index.html · page/</td><td>This page. It imports the kernels above, so what you run here is the code the tests and the mutation gate check.</td><td class="mono">test/page.test.mjs</td><td>tested: its security policy, every control wired, every link resolves, every number bound to a receipt</td></tr>
@@ -238,8 +280,8 @@
   <h2><small>For the guild, its members, and employers</small>What it does for each, and how it rolls out</h2>
   <div class="grid three">
     <div class="panel"><h3>The guild</h3><p>Reviewers spend their time on judgement calls, not on reconstructing what happened. Every review starts from the same record and the same checks, versioned, so two reviewers see the same evidence. The guild can certify people who run agentic work with discipline, which is the scarce skill.</p></div>
-    <div class="panel"><h3>A member</h3><p>Your process becomes evidence: intent written first, tools you sanctioned, assumptions you surfaced, results you had checked. Records are yours, pseudonymous by default, shared only when you opt in, and can be re-run by anyone you show them to.</p></div>
-    <div class="panel"><h3>An employer</h3><p>Instead of trusting a CV or a recruiter, sample a candidate’s reviewed records and re-run them. You see how they direct an agent: whether they seal intent, catch overreach, and verify before accepting. To see what one looks like, load a sample in <a href="#try">Try it</a> and judge it: the table is what a reviewer sees, the queue is what they decide.</p></div>
+    <div class="panel"><h3>A member</h3><p>Your process becomes evidence: intent written first, tools you sanctioned, assumptions you surfaced, results you had checked. Records are yours, pseudonymous by default, shared only when you opt in, and can be re-run by anyone you show them to. Your portfolio holds only the jobs you name, and a job you do not reveal shows its outcomes, never its content.</p></div>
+    <div class="panel"><h3>An employer</h3><p>Instead of trusting a CV or a recruiter, ask for a candidate’s portfolio, check it with the guild’s trust list, and have a sample revealed and judged again on your own machine (see <a href="#portfolio">Portfolio</a>). You see how they direct an agent: whether they seal intent, catch overreach, and verify before accepting. To see what one looks like, load a sample in <a href="#try">Try it</a> and judge it: the table is what a reviewer sees, the queue is what they decide.</p></div>
   </div>
   <h3>Roll-out</h3>
   <ol class="steps">
@@ -247,16 +289,17 @@
     <li><b>Capture</b> (organ 2, built): the recorder on Claude Code’s hooks writes the record as the job runs, intent first.</li>
     <li><b>Sign</b> (organ 3, built): recorder, judge and reviewer sign the bundle; anyone with the trust list checks it.</li>
     <li><b>Key care</b> (organ 4, built): keys sealed under a passphrase; a lost or stolen key revoked, a role rotated.</li>
+    <li><b>Portfolio</b> (organ 5, built): a member names the reviewed jobs to show and the ones to reveal in full; the judge attests each; an employer checks it with the trust list and judges the revealed ones again.</li>
     <li><b>Bridge</b> (waits on acg-assess’s record format): records and flags go into acg-assess for review; decisions come back and are signed.</li>
     <li><b>Red team</b> (not yet run): people who did not write the judge, the guild’s red-teamer first, try to make a badly run job pass: hide an assumption, slip in a tool, polish a summary. Every attempt that gets through becomes a planted case in the suite, so the judge has to catch it from then on. This is what answers the shared-author weakness.</li>
     <li><b>Pilot</b> (not yet run): real guild jobs, with members’ consent, measuring how many flags reach a person, how many a reviewer overturns, and what capture costs in time.</li>
-    <li><b>Portfolio</b>: opt-in, redacted samples an employer can re-run.</li>
   </ol>
   <h3>Cost, data and ownership</h3>
-  <p>MIT licensed, no fee. The judge runs in a browser or in Node, on your own machine: a record never has to leave it to be judged. Records are append-only; a member cannot edit one after review without it showing. Privacy by design: capture only on jobs a member opts into, client data hashed or redacted in a portfolio, deletion on request except signed review outcomes the member agreed to keep.</p>
+  <p>MIT licensed, no fee. The judge runs in a browser or in Node, on your own machine: a record never has to leave it to be judged. Records are append-only; a member cannot edit one after review without it showing. Privacy by design: capture only on jobs a member opts into; in a portfolio, a job the member does not reveal shows its outcomes and decisions, never its content; deletion on request except signed review outcomes the member agreed to keep.</p>
   <h3>Risks, answered straight</h3>
   <ul>
     <li><b>Gaming the record.</b> Intent must be hashed before the first call; the log is hash-chained and signed where it ends; scores link to raw entries so polish cannot hide process. A red team has not tried it yet.</li>
+    <li><b>Cherry-picking.</b> A portfolio shows the jobs its member chose: it says how many it holds, not how many there were. Ask for a sample revealed.</li>
     <li><b>Wrong flags.</b> On the seeded clean jobs there were none, but that suite and the judge share an author. Judgement items only flag; a person decides.</li>
     <li><b>It does not prove the work correct.</b> It measures process discipline and evidence: whether the work was done in a way that can be checked, and what the evidence supports.</li>
   </ul>
@@ -271,6 +314,7 @@
     <div class="panel"><h3>The operations director</h3><p>One process for every agent job, the same eleven checks, versioned. The review queue holds exactly the checks that need a person, and a failure names the entry it rests on. It installs per project, so a pilot is one team and one folder, and widening it is copying a settings file.</p></div>
     <div class="panel"><h3>The technology and security leads</h3><p>It runs where your code runs and sends nothing anywhere. It captures that a prompt was sent, not its text, and a hash of each tool’s input, not the input. Files are kept by hash in the project’s own folder. Signatures are Ed25519 through the platform’s own WebCrypto; the code has no dependencies to vet. See <a href="#security">Security and data protection</a>.</p></div>
     <div class="panel"><h3>The engineering leads and reviewers</h3><p>A review starts from one record: the summary written from the log, each check’s outcome with pointers, the queue of what to decide. A reviewer’s decision on a flag is signed into the same bundle, so the review itself is on the record.</p></div>
+    <div class="panel"><h3>Hiring managers</h3><p>Ask a candidate who runs agents for their portfolio and check it with the trust list of whoever judged it: each job’s outcomes, the reviewer’s decisions, the habits they keep, with a sample revealed and judged again on your own machine. You see how they work, not their clients’ files.</p></div>
     <div class="panel"><h3>Compliance, audit and risk</h3><p>An append-only, hash-chained log; a signed end so a cut or rewrite is refused; a judgement that must re-run byte for byte; the rubric’s version in every judgement; the receipts of every measurement, failures included. Evidence of how AI-assisted work was supervised, kept as files you hold.</p></div>
   </div>
 
@@ -281,6 +325,7 @@
     <li><b>Tamper-evident by construction.</b> Every log line carries the hash of the line before; the recorder signs where the log ends; the judge signs the hash of its judgement; checking a bundle re-runs the judge. Each attack the measurements tried was refused (see <a href="#measured">Measured</a>).</li>
     <li><b>Keys.</b> Each party’s Ed25519 key is made on its own machine; only public keys are shared, on a trust list you own. Seeds are sealed at rest under a passphrase (PBKDF2-SHA-256 into AES-256-GCM, through the platform’s WebCrypto), and a private key in use is held by the platform as non-exportable. A lost or stolen key is revoked on the trust list, and every bundle it signed is refused; rotation replaces a role’s key in one command. See <a href="#keycare">Key care</a>.</li>
     <li><b>Personal data.</b> Members are pseudonymous by default (an id you choose). Records are files you hold: you decide what is shared, and deleting a job’s folder deletes it.</li>
+    <li><b>A shared portfolio.</b> A job its member does not reveal is shown by its outcomes, the reviewer’s decisions and public keys only: no goal, note, claim, tool name, file name or reviewer’s note. Measured with markers planted in every one of those fields: none reached a shared portfolio (see <a href="#portfolio">Portfolio</a>).</li>
     <li><b>Supply chain.</b> No runtime dependencies. The source is open (MIT); the tests, the mutation gate and every measurement re-run on GitHub’s runner on every change.</li>
     <li><b>Certifications.</b> It holds none of its own and claims none: it is software you run, so it sits inside your own controls and your own certifications, and the supplier receives none of your data.</li>
   </ul>
@@ -310,6 +355,7 @@
     <li><b>One harness.</b> The recorder works with Claude Code’s hooks. Another agent harness needs its own recorder or importer.</li>
     <li><b>The rubric is a proposal.</b> P0 to P10 are built from known agentic failure modes and versioned; the guild’s acg-assess rubric governs where it applies, and yours can too.</li>
     <li><b>Keys.</b> A sealed key is as strong as its passphrase, and a key in use is as safe as the machine using it; no hardware key is supported. A key revoked late has already signed: everything it signed is refused once it is revoked, so re-sign what you still need with a trusted key.</li>
+    <li><b>A portfolio is what its member chose to show.</b> It cannot prove nothing was left out, and a job not revealed rests on the judge that attested it: ask for a sample revealed, and know whose judge key you trust.</li>
     <li><b>Live hooks see prompts, not each model request.</b> A live record marks each prompt as the start of model work; the importer, reading a transcript, sees each request.</li>
   </ul>
 
@@ -345,9 +391,9 @@
 <section id="paper">
   <h2><small>White paper</small>Review the process, not the code</h2>
   <p><b>Problem.</b> Agentic work fails quietly: hidden assumptions, unsanctioned tools, finish-bias, missing evidence, persuasive jargon, no independent check. Code review sees the output, not the decisions that led to it, and the agent’s own account of its process is the least trustworthy record there is.</p>
-  <p><b>Method.</b> Write the intent down and hash it before the first model call. Record everything else as an append-only, hash-chained timeline with artifacts by hash. Judge the record with separate, deterministic code against a versioned rubric; each outcome carries pointers to its evidence; judgement calls only flag, and every flag goes to a person. Sign the record, where its log ends, the judgement and each reviewer’s decision, so the whole can be checked by anyone holding the public keys, and the judgement re-run byte for byte. Each part of the system is built against claims committed before its code, measured, and kept when it fails.</p>
+  <p><b>Method.</b> Write the intent down and hash it before the first model call. Record everything else as an append-only, hash-chained timeline with artifacts by hash. Judge the record with separate, deterministic code against a versioned rubric; each outcome carries pointers to its evidence; judgement calls only flag, and every flag goes to a person. Sign the record, where its log ends, the judgement and each reviewer’s decision, so the whole can be checked by anyone holding the public keys, and the judgement re-run byte for byte. A member’s chosen jobs make a portfolio: each attested by the judge with its outcomes and decisions only, the full record only where the member reveals it, so an employer checks how someone works without seeing their clients’ work. Each part of the system is built against claims committed before its code, measured, and kept when it fails.</p>
   <p><b>Result so far.</b> <span id="paper-result">From the receipts, once loaded.</span></p>
-  <p><b>Limits.</b> The planted-failure suite and the judge share an author. No real guild job has been judged; no red team has tried to game a record. The recorder works with one harness, Claude Code. Keys are sealed at rest, not held in hardware. The bridge into acg-assess waits on its record format, and the portfolio comes after it.</p>
+  <p><b>Limits.</b> The planted-failure suite and the judge share an author. No real guild job has been judged; no red team has tried to game a record. The recorder works with one harness, Claude Code. Keys are sealed at rest, not held in hardware. The bridge into acg-assess waits on its record format. A portfolio shows only the jobs its member chose, and no change over time, since a signature carries no time its member could not write.</p>
 </section>
 
 <section id="faq">
@@ -358,6 +404,7 @@
   <h3>Can it record a live Claude Code job?</h3><p>Yes, through Claude Code’s own hooks, per project: see <a href="#record">Record a job</a>. It was measured by replaying real past jobs into the hook, a process per event, rather than inside a live session; the receipt says so.</p>
   <h3>Does my data leave my machine?</h3><p>No. The recorder and the judge make no network calls; the judge runs in your browser or on your machine. Sharing a record for review or a portfolio is your choice.</p>
   <h3>What does it cost?</h3><p>No licence fee: it is MIT licensed. Your cost is the time to set it up and the reviewer time it does not take off; the <a href="#cost">cost case</a> works that out with your numbers. Support, if you want it, is agreed per deployment with AI Native Solutions.</p>
+  <h3>Can an employer trust a portfolio?</h3><p>As far as the keys it trusts. Every job in it must be attested by a judge on the employer’s trust list, about that member, and the scores must be exactly what the jobs give; a changed outcome, a job twice, another member’s job, or a revealed job that is not the one attested is refused. What it cannot show is a job the member left out, so ask for a sample revealed, and judge those again on your own machine. See <a href="#portfolio">Portfolio</a>.</p>
   <h3>What if a key is stolen?</h3><p>Revoke it on the trust list (<span class="mono">acg revoke</span>) and rotate the role (<span class="mono">acg rotate</span>): every bundle the stolen key signs, before or after, is refused and says it was revoked. A key sealed under a passphrase is no use to someone who copies only the file. See <a href="#keycare">Key care</a>.</p>
   <h3>What if you stop maintaining it?</h3><p>It keeps working. It needs no service, account or licence server of ours, and every record is a file you hold and can check with the code you have.</p>
   <h3>What did not work?</h3><p>Organ 1’s fifth claim failed: given <span data-r="1:facts.A5.malformed">…</span> broken records, the judge never crashed, but it passed <span data-r="1:facts.A5.cleanPass">…</span> of them cleanly, because nothing checked that a record was well-formed. Organ 1b added that check (P0) and measured it on fresh broken records: it failed too, more narrowly (<span data-r="1b:facts.B1.cleanPass">…</span> clean passes). It checked the structure the judge needs, not every field’s type, so a record with a garbage member id still passed; and our own measurement skipped the records that were simply empty. Both failures are kept. Organ 1c made P0 check every field: on <span data-r="1c:facts.fresh.damaged">…</span> fresh broken records, <span data-r="1c:facts.fresh.cleanPass">…</span> passed cleanly. The recorder (organ 2) missed one kind of tampering: cutting off the last lines of a job’s log leaves a shorter log whose lines still each follow the one before. Every other edit was caught. Organ 3 anchored where the log ends, signed: on the same real logs every attack was then refused, the cut end included. Its own measurement had a flaw too: its forged judgement (“every check passes”) was refused for only <span data-r="3:facts.F2.judgementLie">…</span> of the <span data-r="3:facts.bundles">…</span> jobs, because for the rest it was simply true; 3b forged one that really differed, and <span data-r="3b:facts.falseRefused">…</span> were refused. See <a href="#measured">Measured</a>.</p>

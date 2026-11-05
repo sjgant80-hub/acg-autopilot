@@ -27,7 +27,7 @@ test('every id the script uses exists; every button is wired; every anchor and l
 });
 
 test('the page explains itself, and both themes define its colours', () => {
-  for (const id of ['what', 'start', 'try', 'record', 'signed', 'how', 'checks', 'measured', 'blueprint', 'adopt', 'business', 'cost', 'paper', 'faq']) assert.match(HTML, new RegExp('<section id="' + id + '"'), id);
+  for (const id of ['what', 'start', 'try', 'record', 'signed', 'portfolio', 'how', 'checks', 'measured', 'blueprint', 'adopt', 'business', 'cost', 'paper', 'faq']) assert.match(HTML, new RegExp('<section id="' + id + '"'), id);
   assert.ok(HTML.includes('<svg viewBox'), 'a diagram');
   for (const h of ['Roll-out', 'Cost, data and ownership', 'Risks, answered straight']) assert.ok(HTML.includes('<h3>' + h + '</h3>'), h);
   const vars = new Set([...CSS.matchAll(/var\((--[a-z]+)\)/g)].map((m) => m[1]));
@@ -65,7 +65,7 @@ test('the blueprint’s gate column is the gate’s receipt, and every kernel is
 
 test('the brochure is on the page: every role, security, roll-out, ownership, risks, the board, the cost case and its sources', () => {
   for (const id of ['business', 'security', 'cost', 'trace', 'c-out', 'c-src']) assert.match(HTML, new RegExp('id="' + id + '"'), id);
-  for (const h of ['The chief executive', 'The finance director', 'The operations director', 'The technology and security leads', 'The engineering leads and reviewers', 'Compliance, audit and risk',
+  for (const h of ['The chief executive', 'The finance director', 'The operations director', 'The technology and security leads', 'The engineering leads and reviewers', 'Hiring managers', 'Compliance, audit and risk',
     'Security and data protection', 'Roll-out in a business', 'Ownership, support and exit', 'The case for the board', 'How it is worked out', 'Where the figures come from']) assert.ok(HTML.includes('>' + h + '</h3>'), h);
   assert.ok(HTML.includes('Supplied by AI Native Solutions') && HTML.includes('href="https://www.ai-nativesolutions.com"'), 'the supplier, and how to reach them');
   assert.ok(HTML.includes('Powered by the Konomi architecture, created by Thomas Frumkin.'), 'the credit');

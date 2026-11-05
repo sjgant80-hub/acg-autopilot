@@ -23,6 +23,7 @@ node tools/measure-1c.mjs --check     # organ 1c (the strict schema)
 node tools/measure-3.mjs --check      # organ 3 (signed records; F5 needs the real transcripts and is local)
 node tools/measure-3b.mjs --check     # organ 3b (a false judgement refused)
 node tools/measure-4.mjs --check      # organ 4 (key care)
+node tools/measure-5.mjs --check      # organ 5 (the member's portfolio)
 ```
 
 CI also runs witness, the mutation gate, on every kernel in `src/`, and checks the run against `receipts/gate.json`
@@ -83,6 +84,22 @@ rounds by default), with a fresh salt and nonce; a wrong passphrase or a changed
 trusted for nothing, and `verify-bundle` names it as revoked. It protects keys at rest, not in use, and it cannot use a
 hardware key.
 
+## A member's portfolio (organ 5)
+
+```
+node /path/to/acg-autopilot/bin/acg.mjs portfolio --member ana --include all --reveal <job>   # or --include job1,job2
+node /path/to/acg-autopilot/bin/acg.mjs check-portfolio portfolio.json --trust trust.json      # exit code 2 when refused
+```
+
+The judge checks each signed bundle in full and then attests it, signing only what a portfolio shows: the record's
+hash, the job, the member's pseudonymous id, the rubric, each check's outcome, the review queue, each reviewer decision
+as upheld or overturned (never its note), and the recorder's and reviewer's public keys. A portfolio holds only the jobs
+its member names, and the full bundle only for the jobs they reveal; its scores are counts (each check's pass, flag and
+fail; flags upheld, overturned and undecided; for each habit the spec names, the jobs that kept it). Anyone with the
+trust list checks it without the records, and judges each revealed job again. It shows what its member chose: it
+cannot prove nothing was left out, it does not tie the pseudonym to a person, and it shows no change over time, because
+a signature carries no time the member could not also write.
+
 ## How it is built
 
 Each organ's claims are committed before its code (`claims/`), measured by a seeded suite (`tools/`), and the result
@@ -97,14 +114,14 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
   record from the log, a past transcript imported, the command line and the hook.
 - `src/sign.mjs`, `src/bundle.mjs`: signed records (organ 3).
 - `src/keystore.mjs`, `src/trust.mjs`: key care (organ 4): sealed keys, revocation, rotation.
+- `src/portfolio.mjs`: the member's portfolio (organ 5): the judge's attestation, the portfolio of the jobs a member chose, the check an employer runs.
 - `src/reviewcase.mjs`, `data/basis.json`: the page's cost case, every external figure from the sourced basis.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
 - `tools/gate.mjs`, `receipts/gate.json`: the gate's own receipt, checked by CI.
 
 Built and measured: organ 1 (the record and the judge) and its follow-ups 1b and 1c (the well-formedness check, then the
-strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b) and key care (organ 4); the receipts hold every result,
-failures included. Waiting: the bridge into acg-assess (it needs acg-assess's record format), and the member portfolio
-after it. Honest scope: it measures process discipline and evidence, not whether the work is correct; the
+strict schema), capture from Claude Code (organ 2), signed records (organ 3, then 3b), key care (organ 4) and the member's portfolio (organ 5); the receipts hold every
+result, failures included. Waiting: the bridge into acg-assess (it needs acg-assess's record format). Honest scope: it measures process discipline and evidence, not whether the work is correct; the
 planted-failure suite and the judge share an author, so the independent tests are a red team and a pilot on real guild
 jobs, neither yet run.
 
