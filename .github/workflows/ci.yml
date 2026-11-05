@@ -64,6 +64,14 @@ jobs:
             grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
             node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
           done
+      - name: organ 7's mutation gate - the withhold list
+        run: |
+          T="test/withhold.test.mjs"
+          for k in src/withhold.mjs; do
+            node /tmp/witness6/witness.mjs mutate $k --timeout 120000 --cap 600 --test node --test $T | tee /tmp/w.txt
+            grep -q '"clean": true' /tmp/w.txt || { echo "::error::mutants survived in $k"; exit 1; }
+            node tools/gate.mjs add $k "$T" /tmp/w.txt /tmp/gate-run.json
+          done
       - name: the cost case's mutation gate - the brochure's numbers
         run: |
           T="test/reviewcase.test.mjs"
@@ -92,3 +100,5 @@ jobs:
         run: node tools/measure-6.mjs --check
       - name: organ 6b - a job with no model call refused at import, on synthetic sessions whole and cut short and a Claude Code transcript; as the receipt says (I1 is local)
         run: node tools/measure-6b.mjs --check
+      - name: organ 7 - the withhold list over 50 jobs with it and without it, a reference matcher, garbage and a list that cannot be read; as the receipt says
+        run: node tools/measure-7.mjs --check

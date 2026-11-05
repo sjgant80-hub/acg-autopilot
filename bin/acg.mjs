@@ -20,6 +20,8 @@
 // The member's portfolio (organ 5): only the jobs named are in it; the judge's key attests each after checking it whole.
 //   acg portfolio --member ID --include all|JOB,JOB [--reveal JOB,JOB] [--trust trust.json] [--out portfolio.json]
 //   acg check-portfolio <portfolio.json> [--trust trust.json]
+// A withhold list (organ 7): files named in .acg/withhold are recorded by name only, never copied or hashed by content
+// (see src/withhold.mjs for the patterns; examples/withhold is a starter list of common secret files to copy).
 // State lives in $ACG_HOME, or .acg in the current folder: jobs/<job>/{log.jsonl, head, intent.json, store/, record.json}.
 // The hook never blocks the harness and never prints: on any error it writes a line to errors.log and exits 0.
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, renameSync, rmSync, statSync, copyFileSync, readdirSync } from 'node:fs';
@@ -36,6 +38,7 @@ import { makeBundle } from '../src/bundle.mjs';
 import { sealSeed, openSeed } from '../src/keystore.mjs';
 import { revoke as revokeKey, rotate as rotateKey, verifyTrusted } from '../src/trust.mjs';
 import { buildPortfolio, checkPortfolio } from '../src/portfolio.mjs';
+import { parseWithhold, withheld } from '../src/withhold.mjs';
 
 const HOME = resolve(process.env.ACG_HOME || join(process.cwd(), '.acg'));
 const EVENTS = ['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'SessionStart'];
@@ -78,6 +81,23 @@ function args(list) {
 const listOf = (s, sep = ';') => (typeof s === 'string' && s.trim() ? s.split(sep).map((x) => x.trim()).filter(Boolean) : []);
 const currentJob = (o) => (typeof o.job === 'string' ? o.job : existsSync(join(HOME, 'current')) ? readFileSync(join(HOME, 'current'), 'utf8').trim() : null);
 
+// ── organ 7: the withhold list ─────────────────────────────────────────────────────────────────────────────────────
+// .acg/withhold names the files to keep out of .acg (src/withhold.mjs; a starter list is examples/withhold). No list:
+// nothing is withheld, exactly as organ 2 measured. A list that exists but cannot be read fails closed: every file is
+// withheld, and errors.log says why.
+const idOf = (p) => relative(process.cwd(), resolve(p)) || p;
+const withheldSha = (id) => createHash('sha256').update('withheld: ' + id).digest('hex');
+let WITHHOLD = null;
+function withholdList() {
+  if (WITHHOLD) return WITHHOLD;
+  const f = join(HOME, 'withhold');
+  if (!existsSync(f)) return (WITHHOLD = []);
+  try { return (WITHHOLD = parseWithhold(readFileSync(f, 'utf8'))); } catch (e) {
+    try { mkdirSync(HOME, { recursive: true }); appendFileSync(join(HOME, 'errors.log'), JSON.stringify({ at: now(), error: 'the withhold list ' + f + ' could not be read (' + String(e && e.message || e) + '): every file withheld' }) + '\n'); } catch {}
+    return (WITHHOLD = ['**']);
+  }
+}
+
 // ── the hook ───────────────────────────────────────────────────────────────────────────────────────────────────────
 /** check a hook event against the recorder's contract; → the error, or null */
 export function hookProblem(h) {
@@ -98,10 +118,15 @@ async function hook() {
   writeFileSync(join(HOME, 'current'), job);
   const at = now();
   if (h.hook_event_name === 'UserPromptSubmit') await append(job, { kind: 'model_call', at, model: 'claude-code' });
-  else if (h.hook_event_name === 'PreToolUse') await append(job, { kind: 'tool_use', at, tool: h.tool_name, input_sha: createHash('sha256').update(canonical(h.tool_input)).digest('hex') });
-  else if (h.hook_event_name === 'PostToolUse') {
+  else if (h.hook_event_name === 'PreToolUse') {
+    const named = typeof h.tool_input.file_path === 'string' ? h.tool_input.file_path : h.tool_input.notebook_path;
+    const hold = typeof named === 'string' && withheld(withholdList(), idOf(named));   // organ 7: the input that carried it is not hashed
+    await append(job, { kind: 'tool_use', at, tool: h.tool_name, input_sha: hold ? withheldSha(idOf(named)) : createHash('sha256').update(canonical(h.tool_input)).digest('hex'), ...(hold ? { withheld: true } : {}) });
+  } else if (h.hook_event_name === 'PostToolUse') {
     const p = h.tool_input.file_path, role = READS.has(h.tool_name) ? 'input' : WRITES.has(h.tool_name) ? 'output' : null;
-    if (role && typeof p === 'string' && existsSync(p) && statSync(p).isFile()) {
+    if (role && typeof p === 'string' && existsSync(p) && statSync(p).isFile() && withheld(withholdList(), idOf(p))) {
+      await append(job, { kind: 'artifact', at, id: idOf(p), role, sha256: withheldSha(idOf(p)), stored: false, withheld: true });   // organ 7: no copy, no hash of its bytes
+    } else if (role && typeof p === 'string' && existsSync(p) && statSync(p).isFile()) {
       const big = statSync(p).size > MAX_KEEP, bytes = big ? null : readFileSync(p), sha = big ? createHash('sha256').update('too large to keep: ' + p).digest('hex') : createHash('sha256').update(bytes).digest('hex');
       if (!big) { mkdirSync(join(dir, 'store'), { recursive: true }); const kept = join(dir, 'store', sha); if (!existsSync(kept)) copyFileSync(p, kept); }
       await append(job, { kind: 'artifact', at, id: relative(process.cwd(), resolve(p)) || p, role, sha256: sha, stored: !big });

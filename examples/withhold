@@ -1,0 +1,34 @@
+# examples/withhold: a starter list of common secret files, to copy into the project's .acg/withhold (organ 7).
+# A file named here is recorded by name only: no copy of it in .acg, no hash of its bytes, no hash of the tool input
+# that carried it. The job's P7 then fails at that entry, so a reviewer sees that an input was withheld.
+# A line with no '/' matches a file's or folder's name anywhere; a line with a '/' matches the path from the project.
+# '*' is any run of characters but '/', '?' one character, '**' any run including '/'. Case does not matter.
+# Add your own: a folder of keys, a config file with a token in it.
+
+# environment files
+.env
+.env.*
+*.env
+
+# keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+
+# credentials kept by common tools
+.npmrc
+.pypirc
+.netrc
+.git-credentials
+.htpasswd
+credentials
+credentials.json
+*.tfvars
+secrets
