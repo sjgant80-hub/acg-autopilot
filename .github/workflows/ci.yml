@@ -78,5 +78,5 @@ jobs:
         run: node tools/measure-3b.mjs --check
       - name: organ 4 - sealed keys, wrong passphrases and changed files, revocation and rotation over the 1,000 bundles, the command line; as the receipt says
         run: node tools/measure-4.mjs --check
-      - name: organ 5 - portfolios of the 1,000 signed jobs: chosen, tampered, marked, edited, revealed, damaged, the command line; as the receipt says
+      - name: organ 5 - portfolios of the 1,000 signed jobs chosen, tampered, marked, edited, revealed and damaged, and the command line; as the receipt says
         run: node tools/measure-5.mjs --check
