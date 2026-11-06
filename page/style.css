@@ -32,3 +32,4 @@ input{font:inherit;border-radius:8px;border:1px solid var(--line);background:var
 input:focus,button:focus,select:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:1px}
 table.bp tr.organ td{color:var(--accent);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-top:16px}
 .trace li{overflow-wrap:anywhere}
+[id]{scroll-margin-top:48px}

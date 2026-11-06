@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(./.acg/**)",
+      "Edit(./.acg/**)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {

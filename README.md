@@ -42,8 +42,10 @@ const judgement = assessStrict(record, await factsOf(record));   // { rubric, re
 
 ## Record a job (organ 2: capture)
 
-In the project you work in, copy `examples/claude-settings.json` to `.claude/settings.json` (or merge its `hooks`), with
-the path to `bin/acg.mjs` filled in, and add `.acg/` to `.gitignore`. Nothing is installed globally. Then:
+In the project you work in, copy `examples/claude-settings.json` to `.claude/settings.json` (or merge its `hooks` and
+`permissions`), with the path to `bin/acg.mjs` filled in, and add `.acg/` to `.gitignore`. Nothing is installed
+globally. Install it from a commit you have read, outside the project, and keep it pinned: the hook runs this code on
+every tool use. Then:
 
 ```
 node /path/to/acg-autopilot/bin/acg.mjs seal --goal "what the job is for" --allowed Read,Edit --criteria "tests pass"
@@ -60,6 +62,17 @@ first prompt. Every log line carries the hash of the line before it. The hook ne
 an error goes to `.acg/errors.log`. An imported past job sealed no intent, and its record says so ("none sealed"), so it
 fails P1. Either import refuses a job with no model call (organ 6b): there is nothing to judge, and P1 would pass on
 nothing.
+
+The agent works beside its own record. Until a job is bundled, `.acg` is a folder on the agent's machine, written as
+the same user; the chain and the signatures catch a change made after bundling, not an agent rewriting its own log
+while the job runs. So the example settings also deny Claude Code's own file tools reading or editing `.acg`
+(`Read(./.acg/**)`, `Edit(./.acg/**)`; `test/settings.test.mjs` keeps them there). By Claude Code's documentation those
+rules cover its file tools, the shell file commands it recognises and shell redirections, not a script that opens files
+itself. For a line the operating system holds, turn on Claude Code's sandbox (macOS, Linux, WSL2) with
+`sandbox.filesystem.denyWrite` on the record's folder: hooks run outside the sandbox, so the recorder still writes, but
+the agent's own `acg note` and `acg claim` then cannot, and the person adds them. Keep the keys sealed and set
+`ACG_PASSPHRASE` only on the command that signs, never in the environment Claude Code starts from: the hook never signs,
+and an agent without the passphrase cannot sign a rewritten log. Bundle each job when it ends.
 
 ## Keep secrets out of the record (organ 7)
 
@@ -145,6 +158,8 @@ kept, failures included (`receipts/`). CI re-runs every measurement and mutation
   set-up hours and the weeks the saving takes to pay them back.
 - `test/egress.test.mjs`: the kernels, the command line and the page import nothing that can open a connection, and the
   package has no runtime dependencies.
+- `examples/claude-settings.json`, `test/settings.test.mjs`: the per-project hook settings to copy, and the check that
+  they run the recorder on every event its hook reads and deny Claude Code's file tools the `.acg` folder.
 - `tools/suite.mjs`: clean jobs, one planted failure of each kind, late intents, malformed records.
 - `tools/gate.mjs`, `receipts/gate.json`: the gate's own receipt, checked by CI.
 
